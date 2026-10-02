@@ -99,6 +99,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
       <button data-tool="range">範囲指示線</button>
       <button data-tool="measure">定規（寸法）</button>
       <button data-tool="text">テキスト</button>
+      <button data-tool="handwrite">手書き注記</button>
       <button data-tool="elevation">高さ ○</button>
       <button data-tool="leader">引出線</button>
       <button data-tool="rect">四角形</button>
@@ -141,7 +142,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
     <button id="toggleRightPanel" type="button">編集</button>
   </div>
   <div class="mobileDock" id="mobileDock">
-    <button data-mobile-tool="select">選択</button><button id="mobileEditLock" class="editLocked">🔒 ロック</button><button id="mobileAddImage">画像</button><button data-mobile-tool="line">直線</button><button data-mobile-tool="polyline">折れ線</button><button data-mobile-tool="range">範囲</button><button data-mobile-tool="leader">引出線</button><button data-mobile-tool="rect">四角</button><button data-mobile-tool="circle">円</button><button data-mobile-tool="polygon">多角</button><button data-mobile-tool="measure">定規（寸法）</button><button data-mobile-tool="text">文字</button><button data-mobile-tool="elevation">高さ</button><button data-mobile-tool="mask">消す</button><button id="mobileDelete" class="danger">削除</button>
+    <button data-mobile-tool="select">選択</button><button id="mobileEditLock" class="editLocked">🔒 ロック</button><button id="mobileAddImage">画像</button><button data-mobile-tool="line">直線</button><button data-mobile-tool="polyline">折れ線</button><button id="finishPolylineMobile" class="hidden" style="font-weight:700">✓ 完了</button><button data-mobile-tool="range">範囲</button><button data-mobile-tool="leader">引出線</button><button data-mobile-tool="rect">四角</button><button data-mobile-tool="circle">円</button><button data-mobile-tool="polygon">多角</button><button data-mobile-tool="measure">定規（寸法）</button><button data-mobile-tool="text">文字</button><button data-mobile-tool="handwrite">手書き</button><button data-mobile-tool="elevation">高さ</button><button data-mobile-tool="mask">消す</button><button id="mobileDelete" class="danger">削除</button>
   </div>
   <div id="stage"><canvas id="bgCanvas"></canvas><svg id="drawSvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
   <div class="statusbar" id="statusbar"><span class="badge ok">新築モード</span> 図面を読み込むか、作図を開始してください。</div>
@@ -221,7 +222,9 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
 <div class="elevModal" id="textModal" aria-hidden="true">
   <div class="elevCard" role="dialog" aria-modal="true" aria-labelledby="textTitle">
     <h3 id="textTitle">テキストを入力</h3>
-    <textarea id="textInput" rows="3" lang="ja-JP" inputmode="text" enterkeyhint="done" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="例：既存ブロック、フェンス H1800"></textarea>
+    <div class="hint" style="margin-bottom:6px">日本語キーボード入力。Apple Pencilの文字認識が英字になる場合は下の「日本語をそのまま手書き」を使用してください。</div>
+    <textarea id="textInput" rows="3" lang="ja" inputmode="text" enterkeyhint="done" autocorrect="on" autocomplete="on" spellcheck="true" placeholder="例：既存ブロック、フェンス H1800"></textarea>
+    <button id="switchToHandwrite" type="button" style="width:100%;margin-top:8px">✍ 日本語をそのまま手書き</button>
     <div class="row" style="margin-top:10px"><label>背景</label><select id="textBgMode"><option value="transparent">透明</option><option value="fill">塗りつぶし</option></select></div>
     <div class="row"><label>背景色</label><input id="textBgColor" type="color" value="#ffffff"></div>
     <div class="elevActions"><button id="textCancel">キャンセル</button><button id="textOk" class="active">配置</button></div>
@@ -388,6 +391,7 @@ function render(){svg.innerHTML='';for(const o of objects){let el;
  } else if(o.kind==='circle'){const c=shapeCenter(o);el=mk('ellipse',{cx:o.cx,cy:o.cy,rx:o.rx,ry:o.ry,fill:o.fillColor||'#90caf9','fill-opacity':o.fillOpacity??.30,stroke:o.color,'stroke-width':o.width,transform:`rotate(${o.angle||0} ${c.x} ${c.y})`});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
  } else if(o.kind==='polygon'){const c=shapeCenter(o);el=mk('polygon',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:o.fillColor||'#90caf9','fill-opacity':o.fillOpacity??.30,stroke:o.color,'stroke-width':o.width,'stroke-linejoin':'round',transform:`rotate(${o.angle||0} ${c.x} ${c.y})`});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
  } else if(o.kind==='freehand'){el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':o.width,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);svg.appendChild(el)
+ } else if(o.kind==='handwrite'){el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':Math.min(o.width||2,3),'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);svg.appendChild(el)
  } else if(o.kind==='polyline'){el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':o.width,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
  } else if(o.kind==='range'){const rp=rangePoints(o);el=mk('polyline',{points:rp.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':1,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el);const sdot=mk('circle',{cx:o.a.x,cy:o.a.y,r:4,fill:o.color,stroke:'none'});const edot=mk('circle',{cx:o.b.x,cy:o.b.y,r:4,fill:o.color,stroke:'none'});[sdot,edot].forEach(x=>{x.dataset.id=o.id;x.style.pointerEvents='all';x.style.cursor=editUnlocked?'move':'pointer';x.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(x)})
  } else if(o.kind==='text'){
@@ -432,11 +436,38 @@ function bounds(o){if(o.kind==='range'&&o.a&&o.b){return rawBoundsPoints(rangePo
 function ensureScale(){if(!pxPerMm){pxPerMm=.15;$('#scaleInfo').value='現調作図倍率 1mm = 0.1500 px';}return pxPerMm}
 function syncInspector(){const o=getSel();const box=$('#geometryBox');if(!o){box?.classList.add('hidden');$('#rectDimControls')?.classList.add('hidden');$('#lineDimControls')?.classList.add('hidden');return;}$('#selType').value=o.type||'generic';$('#selStatus').value=o.status||'existing';$('#selHeight').value=o.height_mm??'';$('#selColor').value=o.color||'#1565c0';$('#selTextBgMode').value=o.textBgEnabled?'fill':'transparent';$('#selTextBgColor').value=o.textBgColor||'#ffffff';$('#selFillColor').value=o.fillColor||'#90caf9';$('#selProduct').value=o.product||'';$('#selNote').value=o.note||'';const editable=['line','measure','dimension','range','rect','circle','polygon'].includes(o.kind);box.classList.toggle('hidden',!editable);$('#rectDimControls')?.classList.toggle('hidden',!(editable&&o.kind==='rect'&&mode==='survey'));$('#lineDimControls')?.classList.toggle('hidden',!(editable&&o.kind==='line'&&mode==='survey'));if(!editable)return;const s=ensureScale();let w=0,h=0,ang=o.angle||0;if(['line','measure','dimension','range'].includes(o.kind)){w=o.value_mm||dist(o.a,o.b)/s;h=0;ang=Math.atan2(o.b.y-o.a.y,o.b.x-o.a.x)*180/Math.PI;$('#geoWidthLabel').textContent='長さ mm';$('#geoHeightRow').classList.add('hidden');$('#geometryHint').textContent='端点をドラッグするか、長さ・角度を数値で変更できます。'}else{const rb=o.kind==='rect'?{w:o.w,h:o.h}:o.kind==='circle'?{w:o.rx*2,h:o.ry*2}:rawBoundsPoints(o.points);w=(o.kind==='rect'&&o.width_mm>0)?o.width_mm:rb.w/s;h=(o.kind==='rect'&&o.depth_mm>0)?o.depth_mm:rb.h/s;$('#geoWidthLabel').textContent='幅 mm';$('#geoHeightRow').classList.remove('hidden');$('#geometryHint').textContent='図形の全体寸法と回転角を数値で変更できます。'}$('#geoWidth').value=w?Math.round(w):'';$('#geoHeight').value=h?Math.round(h):'';$('#geoAngle').value=(Math.round(ang*10)/10).toString();}
 function updateStatus(extra=''){let m={new:'新築モード',survey:'リフォーム現調',instruction:'指示図'}[mode];let scale=pxPerMm?`縮尺校正済み 1mm=${pxPerMm.toFixed(3)}px`:'縮尺未設定';$('#statusbar').innerHTML=`<span class="badge ok">${m}</span><span class="badge ${pxPerMm?'ok':'warn'}">${scale}</span> ${extra}`;}
-function setTool(t){if(t!=='select'&&editUnlocked){editUnlocked=false;updateEditLockUI();}tool=t;exactLineStart=null;exactLineDirection=null;$$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$$('[data-mobile-tool]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTool===t));points=[];polygonHover=null;pathHover=null;drawing=null;render();syncUnifiedNumericUI();updateStatus(`ツール: ${t==='measure'?'定規（寸法）＝測量補助線':t==='range'?'範囲指示線':t==='polyline'?'折れ線':t==='text'?'テキスト':t}`)}
+function updatePolylineFinishUI(){
+  const b=$('#finishPolylineMobile');
+  if(!b)return;
+  b.classList.toggle('hidden',!(tool==='polyline'&&points.length>=2));
+}
+function finishPolyline(){
+  if(tool!=='polyline'||points.length<2){
+    updateStatus('折れ線は2点以上指定してください');
+    return;
+  }
+  const o=objBase('polyline');
+  o.points=points.map(pt=>({...pt}));
+  addObj(o);
+  points=[];
+  pathHover=null;
+  render();
+  updatePolylineFinishUI();
+  updateStatus('折れ線を作成しました。続けて折れ線を作図できます');
+}
+function resetPointerState(){
+  drawing=null;
+  panStart=null;
+  pinchStart=null;
+  objectDrag=null;
+  activePointers.clear();
+}
+function setTool(t){if(t!=='select'&&editUnlocked){editUnlocked=false;updateEditLockUI();}tool=t;exactLineStart=null;exactLineDirection=null;$$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$$('[data-mobile-tool]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTool===t));points=[];polygonHover=null;pathHover=null;resetPointerState();render();updatePolylineFinishUI();syncUnifiedNumericUI();updateStatus(`ツール: ${t==='measure'?'定規（寸法）＝測量補助線':t==='range'?'範囲指示線':t==='polyline'?'折れ線':t==='handwrite'?'手書き注記':t==='text'?'テキスト':t}`)}
 
 $('#modeGroup').addEventListener('click',e=>{let b=e.target.closest('button[data-mode]');if(!b)return;mode=b.dataset.mode;$$('#modeGroup button').forEach(x=>x.classList.toggle('active',x===b));updateStatus()});
 $('#showExistingDims')?.addEventListener('change',()=>render());
 $('#toolGrid').addEventListener('click',e=>{let b=e.target.closest('button[data-tool]');if(b)setTool(b.dataset.tool)});$('#mobileDock').addEventListener('click',e=>{let b=e.target.closest('button[data-mobile-tool]');if(b)setTool(b.dataset.mobileTool)});
+$('#finishPolylineMobile')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();finishPolyline();});
 
 workspace.addEventListener('pointerdown',e=>{
  workspace.setPointerCapture?.(e.pointerId);activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType});
@@ -469,12 +500,18 @@ workspace.addEventListener('pointerdown',e=>{
  if(tool==='rect'){drawing={kind:'rect',x:p.x,y:p.y,w:1,h:1,start:p};return}
  if(tool==='circle'){drawing={kind:'circle',cx:p.x,cy:p.y,rx:1,ry:1,start:p};return}
  if(tool==='freehand'){drawing={kind:'freehand',points:[p]};return}
+ if(tool==='handwrite'){drawing={kind:'handwrite',points:[p]};return}
  if(tool==='polygon'){
    if(points.length>=3 && dist(p,points[0]) <= 18/zoom){let o=objBase('polygon');o.points=[...points];o.closed=true;o.angle=0;addObj(o);points=[];polygonHover=null;return}
    points.push(p);polygonHover=p;renderPolygonPreview();return
  }
  if(tool==='polyline'){
-   points.push(p); pathHover=p; renderPolylinePreview(); updateStatus(points.length===1?'折れ線: 始点を指定しました。次の頂点をクリックしてください':'折れ線: 頂点を追加しました。終点でダブルクリックしてください'); return
+   points.push(p);
+   pathHover=p;
+   renderPolylinePreview();
+   updatePolylineFinishUI();
+   updateStatus(points.length===1?'折れ線: 始点を指定しました。次の頂点をタップしてください':'折れ線: 頂点を追加しました。iPadは「✓ 完了」、PCは終点でダブルクリックして確定できます');
+   return
  }
  if(tool==='text'){openTextInput(p);return}
  if(tool==='elevation'){openElevationInput(p);return}
@@ -512,7 +549,7 @@ workspace.addEventListener('pointermove',e=>{
  const hoverP=screenToStage(e.clientX,e.clientY);if(tool==='polygon'&&points.length&&!drawing){polygonHover=hoverP;renderPolygonPreview();return}
  if(tool==='polyline'&&points.length&&!drawing){pathHover=hoverP;renderPolylinePreview();return}
  if(!drawing)return;const p=hoverP;
- if(drawing.b)drawing.b=p;else if(drawing.kind==='freehand')drawing.points.push(p);else if(drawing.kind==='mask'||drawing.kind==='rect'){drawing.x=Math.min(drawing.start.x,p.x);drawing.y=Math.min(drawing.start.y,p.y);drawing.w=Math.abs(p.x-drawing.start.x);drawing.h=Math.abs(p.y-drawing.start.y)}else if(drawing.kind==='circle'){drawing.cx=(drawing.start.x+p.x)/2;drawing.cy=(drawing.start.y+p.y)/2;drawing.rx=Math.abs(p.x-drawing.start.x)/2;drawing.ry=Math.abs(p.y-drawing.start.y)/2}
+ if(drawing.b)drawing.b=p;else if(drawing.kind==='freehand'||drawing.kind==='handwrite')drawing.points.push(p);else if(drawing.kind==='mask'||drawing.kind==='rect'){drawing.x=Math.min(drawing.start.x,p.x);drawing.y=Math.min(drawing.start.y,p.y);drawing.w=Math.abs(p.x-drawing.start.x);drawing.h=Math.abs(p.y-drawing.start.y)}else if(drawing.kind==='circle'){drawing.cx=(drawing.start.x+p.x)/2;drawing.cy=(drawing.start.y+p.y)/2;drawing.rx=Math.abs(p.x-drawing.start.x)/2;drawing.ry=Math.abs(p.y-drawing.start.y)/2}
  renderPreview();
 });
 function finalizeTwoPointDrawing(){
@@ -522,20 +559,19 @@ function finalizeTwoPointDrawing(){
  if(kind==='leader'){o.width=1;o.text=prompt('引出線の先に記載するテキストを入力してください','フェンス H1800')||''}
  if(kind==='range'){o.width=1}
  if(kind==='measure'&&pxPerMm)o.value_mm=dist(o.a,o.b)/pxPerMm;
- drawing=null;addObj(o);
+ drawing=null;addObj(o);resetPointerState();
  updateStatus(`${kind==='measure'?'定規（寸法）':kind==='leader'?'引出線':kind==='range'?'範囲指示線':'直線'}を作成しました。続けて同じツールで作図できます`);
 }
 function renderPreview(){render();if(!drawing)return;let o={...objBase(drawing.kind),...drawing,id:'preview',color:$('#colorPicker').value,fillColor:$('#fillColorPicker').value,fillOpacity:.30,width:+$('#strokeWidth').value};if(['leader','range'].includes(o.kind))o.width=1;objects.push(o);render();objects.pop();if(['rect','circle'].includes(o.kind))renderShapeDimensions(o);}
 function renderPolygonPreview(){render();if(!points.length)return;const previewPts=polygonHover?[...points,polygonHover]:[...points];const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:$('#colorPicker').value,'stroke-width':+$('#strokeWidth').value||4,'stroke-dasharray':'7 5','stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);renderShapeDimensions({kind:'polygon',points:previewPts,closed:false});const first=points[0];svg.appendChild(mk('circle',{cx:first.x,cy:first.y,r:9/zoom,fill:'rgba(127,86,217,.15)',stroke:'#7f56d9','stroke-width':2/zoom,class:'guide'}));if(points.length>=2){const last=polygonHover||points[points.length-1];const close=mk('line',{x1:last.x,y1:last.y,x2:first.x,y2:first.y,stroke:'#98a2b3','stroke-width':1.5,'stroke-dasharray':'4 4',class:'guide'});svg.appendChild(close);addDimText(first.x,first.y-14/zoom,'始点をタップで確定')}}
-function renderPolylinePreview(){render();if(!points.length)return;const previewPts=pathHover?[...points,pathHover]:[...points];const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:$('#colorPicker').value,'stroke-width':+$('#strokeWidth').value||4,'stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);for(let i=0;i<previewPts.length-1;i++)addEdgeDim(previewPts[i],previewPts[i+1],-12/zoom);previewPts.forEach((pt,i)=>{svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:(i===0?5:4)/zoom,fill:'#fff',stroke:$('#colorPicker').value,'stroke-width':2/zoom,class:'guide'}))});const last=previewPts[previewPts.length-1];addDimText(last.x,last.y-14/zoom,'終点でダブルクリック','start')}
+function renderPolylinePreview(){render();if(!points.length)return;const previewPts=pathHover?[...points,pathHover]:[...points];const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:$('#colorPicker').value,'stroke-width':+$('#strokeWidth').value||4,'stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);for(let i=0;i<previewPts.length-1;i++)addEdgeDim(previewPts[i],previewPts[i+1],-12/zoom);previewPts.forEach((pt,i)=>{svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:(i===0?5:4)/zoom,fill:'#fff',stroke:$('#colorPicker').value,'stroke-width':2/zoom,class:'guide'}))});const last=previewPts[previewPts.length-1];addDimText(last.x,last.y-14/zoom,'iPad: ✓ 完了 / PC: ダブルクリック','start')}
 workspace.addEventListener('dblclick',e=>{
  if(tool!=='polyline'||points.length<2)return;
  e.preventDefault();e.stopPropagation();
  const p=screenToStage(e.clientX,e.clientY);
  if(points.length>=2&&dist(points[points.length-1],points[points.length-2])<=6/zoom)points.pop();
  if(points.length&&dist(p,points[points.length-1])>6/zoom)points.push(p);
- if(points.length<2)return;
- const o=objBase('polyline');o.points=points.map(pt=>({...pt}));addObj(o);points=[];pathHover=null;render();updateStatus('折れ線を作成しました。続けて折れ線を作図できます');
+ finishPolyline();
 });
 workspace.addEventListener('pointerup',e=>{
  if(objectDrag){objectDrag=null;return}
@@ -550,12 +586,13 @@ workspace.addEventListener('pointerup',e=>{
    if(drawing.awaitingSecond){return}
  }
  if(drawing.kind==='freehand'&&drawing.points.length>1){let o=objBase('freehand');o.points=drawing.points;addObj(o)}
+ else if(drawing.kind==='handwrite'&&drawing.points.length>1){let o=objBase('handwrite');o.points=drawing.points;o.width=Math.min(+$('#strokeWidth').value||2,3);addObj(o)}
  else if(drawing.kind==='mask'){let o=objBase('mask');Object.assign(o,{x:drawing.x,y:drawing.y,w:drawing.w,h:drawing.h});addObj(o)}
  else if(drawing.kind==='rect'){let o=objBase('rect');Object.assign(o,{x:drawing.x,y:drawing.y,w:drawing.w,h:drawing.h,angle:0});if(pxPerMm){o.width_mm=o.w/pxPerMm;o.depth_mm=o.h/pxPerMm}addObj(o)}
  else if(drawing.kind==='circle'){let o=objBase('circle');Object.assign(o,{cx:drawing.cx,cy:drawing.cy,rx:drawing.rx,ry:drawing.ry,angle:0});addObj(o)}
  drawing=null;
 });
-workspace.addEventListener('pointercancel',()=>{drawing=null;polygonHover=null;pathHover=null;panStart=null;objectDrag=null;activePointers.clear();render()});
+workspace.addEventListener('pointercancel',()=>{polygonHover=null;pathHover=null;resetPointerState();render()});
 workspace.addEventListener('wheel',e=>{e.preventDefault();const before=screenToStage(e.clientX,e.clientY);const factor=e.deltaY<0?1.12:.89;zoom=Math.max(.1,Math.min(5,zoom*factor));const r=workspace.getBoundingClientRect();panX=e.clientX-r.left-before.x*zoom;panY=e.clientY-r.top-before.y*zoom;applyTransform()},{passive:false});
 
 let pendingTextPoint=null;
@@ -563,7 +600,7 @@ function openTextInput(p){
   pendingTextPoint=p;
   const modal=$('#textModal'),input=$('#textInput');
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');
-  input.setAttribute('lang','ja-JP');document.documentElement.lang='ja';
+  input.setAttribute('lang','ja');input.setAttribute('autocorrect','on');input.setAttribute('spellcheck','true');document.documentElement.lang='ja';
   input.value='';
   $('#textBgMode').value='transparent';$('#textBgColor').value='#ffffff';
   setTimeout(()=>{input.focus()},0);
@@ -578,6 +615,7 @@ function commitText(){
   addObj(o);closeTextInput();render();updateStatus('テキストを配置しました。続けてテキストを配置できます');
 }
 $('#textOk').onclick=commitText;$('#textCancel').onclick=closeTextInput;
+$('#switchToHandwrite')?.addEventListener('click',()=>{closeTextInput();setTool('handwrite');updateStatus('手書き注記：Apple Pencilで日本語をそのまま書けます。ペンを離すと1ストローク確定します');});
 $('#textInput').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')commitText();if(e.key==='Escape')closeTextInput()});
 $('#textModal').addEventListener('pointerdown',e=>{if(e.target.id==='textModal')closeTextInput()});
 
