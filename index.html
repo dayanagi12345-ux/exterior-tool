@@ -143,7 +143,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
       <button data-survey-tool="existingBlock">既存CB</button>
       <button data-survey-tool="existingFence">既存フェンス</button>
     </div>
-    <div class="hint" style="margin-top:8px">建物基礎は折れ線で各辺寸法を自動表示。境界・道路境界はポイント記号で配置します。既存CB・フェンスは既存状態で記録します。</div>
+    <div class="hint" style="margin-top:8px">建物基礎は水平・垂直に補正し、各折れ点は直角（90°）。各辺寸法を自動表示。境界・道路境界はポイント記号で配置します。既存CB・フェンスは既存状態で記録します。</div>
   </div>
   <div class="section">
     <h3>基本作図ツール</h3><div class="hint" style="margin-bottom:8px">削除する場合は「選択」→ 図形をタップ →「選択した記載を削除」。編集ロック中でも選択・削除できます。</div>
@@ -163,6 +163,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
       <button data-tool="polygon">多角形</button>
       <button data-tool="mask">消しゴム</button>
     </div>
+    <div class="row" id="rangeDirectionRow" style="margin-top:8px"><label>範囲の向き</label><select id="rangeDirection"><option value="up">上向き</option><option value="down">下向き</option></select></div>
     <div class="row" style="margin-top:10px"><label>作図方法</label><select id="drawMethod"><option value="direct">マウス・ペンで描く</option><option value="numeric">寸法・角度で作る</option></select></div>
     <div id="unifiedNumericBox" class="hidden">
       <div class="row"><label id="unifiedWLabel">長さ / 幅 mm</label><input id="numericW" type="number" min="1" step="1" value="3000"></div>
@@ -171,7 +172,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
       <div class="row hidden" id="numericSidesRow"><label>辺数</label><input id="numericSides" type="number" min="3" max="12" step="1" value="4"></div>
       <div class="hint">寸法・角度を入力後、キャンバス上の基準点をクリックすると作成します。</div>
     </div>
-    <div class="hint" style="margin-top:8px">同じ作図ツールを、直接描画でも数値指定でも使えます。iPadのApple Pencilでは直線・定規・範囲指示線・引出線は、ペンを引いて画面から離すと確定します。多角形の直接描画は各頂点をタップし、最後に始点をタップすると確定します。範囲指示線は始点と終点をクリックすると、両端の斜め線と上部の水平線を自動生成します。</div>
+    <div class="hint" style="margin-top:8px">同じ作図ツールを、直接描画でも数値指定でも使えます。iPadのApple Pencilでは直線・定規・範囲指示線・引出線は、ペンを引いて画面から離すと確定します。多角形の直接描画は各頂点をタップし、最後に始点をタップすると確定します。範囲指示線は始点と終点で作成し、上向き・下向きに変更できます。</div>
   </div>
   <div class="section">
     <h3>新規作図スタイル</h3>
@@ -201,7 +202,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
     <button id="toggleRightPanel" type="button">編集</button>
   </div>
   <div class="mobileDock" id="mobileDock">
-    <button id="mobileExteriorBtn" type="button">外構</button><button id="mobileSurveyBtn" type="button" class="hidden">現調</button><button data-mobile-tool="select">選択</button><button id="mobileEditLock" class="editLocked">🔒 ロック</button><button id="mobileAddImage">画像</button><button data-mobile-tool="line">直線</button><button data-mobile-tool="polyline">折れ線</button><button id="finishPolylineMobile" class="hidden" style="font-weight:700">✓ 完了</button><button data-mobile-tool="range">範囲</button><button data-mobile-tool="leader">引出線</button><button data-mobile-tool="rect">四角</button><button data-mobile-tool="circle">円</button><button data-mobile-tool="polygon">多角</button><button data-mobile-tool="measure">定規（寸法）</button><button data-mobile-tool="text">文字</button><button data-mobile-tool="handwrite">手書き</button><button data-mobile-tool="elevation">高さ</button><button data-mobile-tool="mask">消す</button><button id="mobileDelete" class="danger">削除</button>
+    <button id="mobileExteriorBtn" type="button">外構</button><button id="mobileSurveyBtn" type="button" class="hidden">現調</button><button data-mobile-tool="select">選択</button><button id="mobileEditLock" class="editLocked">🔒 ロック</button><button id="mobileAddImage">画像</button><button data-mobile-tool="line">直線</button><button data-mobile-tool="polyline">折れ線</button><button id="finishPolylineMobile" class="hidden" style="font-weight:700">✓ 完了</button><button data-mobile-tool="range">範囲</button><button id="mobileRangeDirection" type="button" class="hidden">↑ 上</button><button data-mobile-tool="leader">引出線</button><button data-mobile-tool="rect">四角</button><button data-mobile-tool="circle">円</button><button data-mobile-tool="polygon">多角</button><button data-mobile-tool="measure">定規（寸法）</button><button data-mobile-tool="text">文字</button><button data-mobile-tool="handwrite">手書き</button><button data-mobile-tool="elevation">高さ</button><button data-mobile-tool="mask">消す</button><button id="mobileDelete" class="danger">削除</button>
   </div>
   <div id="surveyMobilePanel" style="display:none;position:absolute;left:8px;right:8px;top:56px;z-index:46;background:rgba(255,255,255,.98);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 12px 30px rgba(17,24,39,.18);max-height:70%;overflow:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>現調専用ツール</strong><button id="closeSurveyMobile" type="button">閉じる</button></div>
@@ -240,6 +241,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
       <div class="row" id="geoHeightRow"><label>奥行 / 高さ mm</label><input id="geoHeight" type="number" min="1" step="1"></div>
       <div class="row"><label>角度 °</label><input id="geoAngle" type="number" step="0.1"></div>
       <button id="applyGeometry" style="width:100%">寸法・角度を反映</button>
+      <div id="rangeDirectionEditRow" class="row hidden"><label>範囲の向き</label><select id="rangeDirectionEdit"><option value="up">上向き</option><option value="down">下向き</option></select></div>
       <div id="rectDimControls" class="hidden" style="margin-top:8px;padding-top:8px;border-top:1px solid #edf0f2">
         <div class="hint">四角形の不要な寸法表示だけを削除できます。</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
@@ -850,7 +852,33 @@ function saveExteriorInfo(placeAnnotation=false){
 }
 
 function currentStyle(){return {color:$('#colorPicker').value,fillColor:$('#fillColorPicker').value,fillOpacity:.30,width:+$('#strokeWidth').value||4,type:'generic',status:'existing'}}
-function rangeFrame(o){const a=o.a,b=o.b;const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;const ux=dx/L,uy=dy/L;let nx=-uy,ny=ux;if(ny>0){nx=-nx;ny=-ny}if(Math.abs(ny)<0.15&&nx<0){nx=-nx;ny=-ny}const defaultOff=Math.max(36,Math.min(70,L*.12));const off=Math.max(12,o.rangeOffset??defaultOff);const shoulder=Math.max(24,Math.min(48,L*.08));return {a,b,L,ux,uy,nx,ny,off,shoulder}}
+function foundationConstrainPoint(target,pts){
+  if(!pts.length)return {...target};
+  const last=pts[pts.length-1];
+  if(pts.length===1){
+    const dx=target.x-last.x,dy=target.y-last.y;
+    return Math.abs(dx)>=Math.abs(dy)
+      ? {x:target.x,y:last.y}
+      : {x:last.x,y:target.y};
+  }
+  const prev=pts[pts.length-2];
+  const previousHorizontal=Math.abs(last.x-prev.x)>=Math.abs(last.y-prev.y);
+  // 折れ点以降は直前の辺と常に直角。必ず水平・垂直線にする。
+  return previousHorizontal
+    ? {x:last.x,y:target.y}
+    : {x:target.x,y:last.y};
+}
+function effectiveFoundationPoint(p){
+  return activeSurvey==='foundation' ? foundationConstrainPoint(p,points) : p;
+}
+function rangeDirectionValue(){return $('#rangeDirection')?.value==='down'?'down':'up'}
+function updateRangeDirectionUi(){
+  const b=$('#mobileRangeDirection');
+  if(b){b.classList.toggle('hidden',tool!=='range');b.textContent=rangeDirectionValue()==='down'?'↓ 下':'↑ 上'}
+}
+function rangeFrame(o){const a=o.a,b=o.b;const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;const ux=dx/L,uy=dy/L;let nx=-uy,ny=ux;if(ny>0){nx=-nx;ny=-ny}if(Math.abs(ny)<0.15&&nx<0){nx=-nx;ny=-ny}
+if((o.rangeDirection||'up')==='down'){nx=-nx;ny=-ny}
+const defaultOff=Math.max(36,Math.min(70,L*.12));const off=Math.max(12,o.rangeOffset??defaultOff);const shoulder=Math.max(24,Math.min(48,L*.08));return {a,b,L,ux,uy,nx,ny,off,shoulder}}
 function rangePoints(o){const f=rangeFrame(o);return [f.a,{x:f.a.x+f.ux*f.shoulder+f.nx*f.off,y:f.a.y+f.uy*f.shoulder+f.ny*f.off},{x:f.b.x-f.ux*f.shoulder+f.nx*f.off,y:f.b.y-f.uy*f.shoulder+f.ny*f.off},f.b]}
 function objBase(kind){let s=currentStyle();if(!['line','freehand','polyline','handwrite'].includes(kind))s.width=1;return {id:uid(),kind,...s,height_mm:null,product:'',note:'',mode};}
 function addObj(o){
@@ -1053,7 +1081,11 @@ function drawExteriorLengthLabels(o){
   // 必要な寸法は定規やテキストで明示的に記載する運用とする。
   return;
 }
-function syncInspector(){const o=getSel();syncExteriorLengthEditor(o);const box=$('#geometryBox');$('#editExteriorInfo')?.classList.toggle('hidden',!o?.exteriorType);
+function syncInspector(){
+  const o=getSel();
+  $('#rangeDirectionEditRow')?.classList.toggle('hidden',o?.kind!=='range');
+  if(o?.kind==='range')$('#rangeDirectionEdit').value=o.rangeDirection||'up';
+  syncExteriorLengthEditor(o);const box=$('#geometryBox');$('#editExteriorInfo')?.classList.toggle('hidden',!o?.exteriorType);
   const annotationActions=$('#extAnnotationActions');
   annotationActions?.classList.toggle('hidden',!o?.exteriorType);
   const removeAnnotation=$('#removeExteriorAnnotation');
@@ -1091,10 +1123,26 @@ function resetPointerState(){
   objectDrag=null;
   activePointers.clear();
 }
-function setTool(t,preserveExterior=false,preserveSurvey=false){if(!preserveExterior){activeExterior=null;syncExteriorButtons();$('#extSegmentEntry')?.classList.add('hidden');}if(!preserveSurvey){activeSurvey=null;syncSurveyButtons();}if(t!=='select'&&editUnlocked){editUnlocked=false;updateEditLockUI();}tool=t;if(t==='stairNumber')nextStairNumber=1;lastPolylineTapAt=0;lastPolylineTapPoint=null;exactLineStart=null;exactLineDirection=null;$$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$$('[data-mobile-tool]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTool===t));points=[];polygonHover=null;pathHover=null;resetPointerState();render();updatePolylineFinishUI();syncUnifiedNumericUI();updateStatus(`ツール: ${t==='measure'?'定規（寸法）＝測量補助線':t==='range'?'範囲指示線':t==='polyline'?'折れ線':t==='handwrite'?'手書き注記':t==='text'?'テキスト':t==='stairNumber'?'階段段数：タップするごとに①②③…を配置':t}`)}
+function setTool(t,preserveExterior=false,preserveSurvey=false){if(!preserveExterior){activeExterior=null;syncExteriorButtons();$('#extSegmentEntry')?.classList.add('hidden');}if(!preserveSurvey){activeSurvey=null;syncSurveyButtons();}if(t!=='select'&&editUnlocked){editUnlocked=false;updateEditLockUI();}tool=t;if(t==='stairNumber')nextStairNumber=1;lastPolylineTapAt=0;lastPolylineTapPoint=null;exactLineStart=null;exactLineDirection=null;$$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$$('[data-mobile-tool]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTool===t));points=[];polygonHover=null;pathHover=null;resetPointerState();render();updatePolylineFinishUI();updateRangeDirectionUi();syncUnifiedNumericUI();updateStatus(`ツール: ${t==='measure'?'定規（寸法）＝測量補助線':t==='range'?'範囲指示線':t==='polyline'?'折れ線':t==='handwrite'?'手書き注記':t==='text'?'テキスト':t==='stairNumber'?'階段段数：タップするごとに①②③…を配置':t}`)}
 
 $('#modeGroup').addEventListener('click',e=>{let b=e.target.closest('button[data-mode]');if(!b)return;setModeUi(b.dataset.mode);updateStatus()});
 $('#showExistingDims')?.addEventListener('change',()=>render());
+$('#rangeDirection')?.addEventListener('change',()=>{
+  updateRangeDirectionUi();
+  if(tool==='range'&&drawing)renderPreview();
+});
+$('#mobileRangeDirection')?.addEventListener('click',e=>{
+  e.stopPropagation();
+  $('#rangeDirection').value=rangeDirectionValue()==='up'?'down':'up';
+  updateRangeDirectionUi();
+  if(drawing)renderPreview();
+});
+$('#rangeDirectionEdit')?.addEventListener('change',()=>{
+  const o=getSel();if(!o||o.kind!=='range')return;
+  pushHistory();o.rangeDirection=$('#rangeDirectionEdit').value;render();syncInspector();
+  updateStatus('範囲指示線の向きを変更しました');
+});
+
 $('#toolGrid').addEventListener('click',e=>{let b=e.target.closest('button[data-tool]');if(b)setTool(b.dataset.tool)});$('#mobileDock').addEventListener('click',e=>{let b=e.target.closest('button[data-mobile-tool]');if(b)setTool(b.dataset.mobileTool)});
 $('#exteriorToolGrid')?.addEventListener('click',e=>{const b=e.target.closest('button[data-ext]');if(b)setExteriorTool(b.dataset.ext)});
 $('#mobileExteriorToolGrid')?.addEventListener('click',e=>{const b=e.target.closest('button[data-ext]');if(b)setExteriorTool(b.dataset.ext)});
@@ -1186,10 +1234,13 @@ workspace.addEventListener('pointerdown',e=>{
      finishPolyline();
      return
    }
-   let nextPoint=p;
+   let nextPoint=effectiveFoundationPoint(p);
    if(points.length>=1&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){
      nextPoint=exteriorConstrainLength(points[points.length-1],p,exteriorLengthInput());
      $('#extSegmentLength').value=''; // independently editable next segment
+   }
+   if(activeSurvey==='foundation'&&points.length&&dist(nextPoint,points[points.length-1])<1/zoom){
+     updateStatus('建物基礎：直前の線に対して90°の方向へ次の点を指定してください');return
    }
    points.push(nextPoint);
    pathHover=nextPoint;
@@ -1229,14 +1280,24 @@ workspace.addEventListener('pointermove',e=>{
    }
    else if(objectDrag.mode==='lineA'){o.a={x:p.x,y:p.y};if(pxPerMm)o.value_mm=dist(o.a,o.b)/pxPerMm}
    else if(objectDrag.mode==='lineB'){o.b={x:p.x,y:p.y};if(pxPerMm)o.value_mm=dist(o.a,o.b)/pxPerMm}
-   else if(objectDrag.mode==='rangeHeight'){const f=rangeFrame(orig);const mid={x:(orig.a.x+orig.b.x)/2,y:(orig.a.y+orig.b.y)/2};const vx=p.x-mid.x,vy=p.y-mid.y;o.rangeOffset=Math.max(12,Math.abs(vx*f.nx+vy*f.ny))}
+   else if(objectDrag.mode==='rangeHeight'){
+     const f=rangeFrame(orig),mid={x:(orig.a.x+orig.b.x)/2,y:(orig.a.y+orig.b.y)/2};
+     const projected=(p.x-mid.x)*f.nx+(p.y-mid.y)*f.ny;
+     o.rangeOffset=Math.max(12,Math.abs(projected));
+     o.rangeDirection=projected>=0?(orig.rangeDirection||'up'):((orig.rangeDirection||'up')==='up'?'down':'up');
+   }
    else if(objectDrag.mode.startsWith('polyVertex:')){const i=Number(objectDrag.mode.split(':')[1]);if(Number.isInteger(i)&&o.points?.[i])o.points[i]={x:p.x,y:p.y}}
    render();syncInspector()}return}
  if(activePointers.has(e.pointerId)){activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType})}
  if(activePointers.size===2&&pinchStart){const arr=[...activePointers.values()];const d=Math.hypot(arr[1].x-arr[0].x,arr[1].y-arr[0].y);zoom=Math.max(.1,Math.min(5,pinchStart.zoom*d/pinchStart.d));applyTransform();return}
  if(panStart){panX=panStart.panX+(e.clientX-panStart.x);panY=panStart.panY+(e.clientY-panStart.y);applyTransform();return}
  const hoverP=screenToStage(e.clientX,e.clientY);if(tool==='polygon'&&points.length&&!drawing){polygonHover=hoverP;renderPolygonPreview();return}
- if(tool==='polyline'&&points.length&&!drawing){pathHover=exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()?exteriorConstrainLength(points[points.length-1],hoverP,exteriorLengthInput()):hoverP;renderPolylinePreview();return}
+ if(tool==='polyline'&&points.length&&!drawing){
+   pathHover=activeSurvey==='foundation'?effectiveFoundationPoint(hoverP):
+     (exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()
+      ?exteriorConstrainLength(points[points.length-1],hoverP,exteriorLengthInput()):hoverP);
+   renderPolylinePreview();return
+ }
  if(!drawing)return;const p=hoverP;
  if(drawing.b)drawing.b=p;else if(drawing.kind==='freehand'||drawing.kind==='handwrite')drawing.points.push(p);else if(drawing.kind==='mask'||drawing.kind==='rect'){drawing.x=Math.min(drawing.start.x,p.x);drawing.y=Math.min(drawing.start.y,p.y);drawing.w=Math.abs(p.x-drawing.start.x);drawing.h=Math.abs(p.y-drawing.start.y)}else if(drawing.kind==='circle'){drawing.cx=(drawing.start.x+p.x)/2;drawing.cy=(drawing.start.y+p.y)/2;if(activeExterior==='planting'){const r=Math.max(Math.abs(p.x-drawing.start.x),Math.abs(p.y-drawing.start.y))/2;drawing.rx=r;drawing.ry=r}else{drawing.rx=Math.abs(p.x-drawing.start.x)/2;drawing.ry=Math.abs(p.y-drawing.start.y)/2}}
  renderPreview();
@@ -1247,7 +1308,7 @@ function finalizeTwoPointDrawing(){
   let o=objBase(kind);o.a={...drawing.a};o.b={...drawing.b};
   if(kind==='line'&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){o.b=exteriorConstrainLength(o.a,o.b,exteriorLengthInput());o.value_mm=exteriorLengthInput();}
  if(kind==='leader'){o.width=1;o.text=prompt('引出線の先に記載するテキストを入力してください','フェンス H1800')||''}
- if(kind==='range'){o.width=1}
+ if(kind==='range'){o.width=1;o.rangeDirection=rangeDirectionValue()}
  if(kind==='measure'&&pxPerMm)o.value_mm=dist(o.a,o.b)/pxPerMm;
  drawing=null;addObj(o);resetPointerState();
  updateStatus(`${kind==='measure'?'定規（寸法）':kind==='leader'?'引出線':kind==='range'?'範囲指示線':'直線'}を作成しました。続けて同じツールで作図できます`);
@@ -1259,6 +1320,7 @@ function renderPreview(){
     color:$('#colorPicker').value,fillColor:$('#fillColorPicker').value,
     fillOpacity:.30,width:['line','freehand','polyline','handwrite'].includes(drawing.kind)?(+$('#strokeWidth').value||3):1};
   if(activeExterior)applyExteriorPreset(o,activeExterior);
+  if(o.kind==='range')o.rangeDirection=rangeDirectionValue();
   if(o.kind==='line'&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){
     o.b=exteriorConstrainLength(o.a,o.b,exteriorLengthInput());
   }
