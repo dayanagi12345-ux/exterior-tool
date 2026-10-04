@@ -22,7 +22,22 @@ button.editLocked{background:#ecfdf3;color:#027a48;border-color:#a6f4c5;font-wei
 main{display:grid;grid-template-columns:230px 1fr 280px;min-height:0}
 aside{background:#fff;border-right:1px solid var(--line);overflow:auto;padding:12px}aside.right{border-right:0;border-left:1px solid var(--line)}
 h3{font-size:14px;margin:10px 0 8px}.section{border-bottom:1px solid #edf0f2;padding-bottom:12px;margin-bottom:12px}.hint{font-size:12px;color:var(--muted);line-height:1.5}.row{display:flex;gap:8px;align-items:center;margin:7px 0}.row>*{min-width:0}.row label{font-size:12px;color:var(--muted);width:74px}.row input,.row select,.row textarea{flex:1;border:1px solid #cfd5dc;border-radius:7px;padding:7px;background:#fff}.row textarea{min-height:64px;resize:vertical}
-.toolgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.toolgrid button{padding:7px 5px;font-size:13px}.catalogItem{border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0;background:#fbfcfd}.catalogItem strong{font-size:13px}.catalogItem small{display:block;color:var(--muted);margin-top:2px}
+.toolgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.toolgrid button{padding:7px 5px;font-size:13px}
+.extToolgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.extToolgrid button{padding:8px 5px;font-size:13px;min-height:42px;border-color:#b7c3d0;background:#f8fafc;font-weight:650}
+.extToolgrid button.active{background:#111827;color:#fff;border-color:#111827}
+.extOptions{margin-top:9px;padding:8px;border:1px solid #e4e7ec;border-radius:9px;background:#fbfcfd}
+.extOptions .row{margin:5px 0}
+.extModalGrid{display:grid;grid-template-columns:1fr;gap:2px}
+.extInfoRow{display:flex;gap:8px;align-items:center;margin:7px 0}
+.extInfoRow label{width:88px;font-size:12px;color:var(--muted);flex:0 0 auto}
+.extInfoRow input,.extInfoRow select{flex:1;min-width:0;border:1px solid #cfd5dc;border-radius:8px;padding:9px;background:#fff}
+.extModalActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.extModalActions .primary{grid-column:1/-1;background:#111827;color:#fff;border-color:#111827;font-weight:700}
+#extMobilePanel{display:none;position:absolute;left:8px;right:8px;top:56px;z-index:45;background:rgba(255,255,255,.98);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 12px 30px rgba(17,24,39,.18);max-height:70%;overflow:auto}
+#extMobilePanel.open{display:block}
+#extMobilePanel .extToolgrid{grid-template-columns:repeat(3,1fr)}
+@media(max-width:700px){#extMobilePanel .extToolgrid{grid-template-columns:repeat(2,1fr)}}.catalogItem{border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0;background:#fbfcfd}.catalogItem strong{font-size:13px}.catalogItem small{display:block;color:var(--muted);margin-top:2px}
 #workspace{position:relative;overflow:hidden;background:#dfe4ea;touch-action:none;user-select:none}
 #stage{position:absolute;left:0;top:0;transform-origin:0 0}
 #bgCanvas,#drawSvg{position:absolute;left:0;top:0}
@@ -89,8 +104,49 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
 </header>
 <main>
 <aside id="leftPanel">
+  <div class="section" id="exteriorToolsSection">
+    <h3>エクステリア専用ツール</h3>
+    <div class="hint" style="margin-bottom:8px">工種を選んで描くだけで、線色・塗り・模様・バックデータを自動設定します。高さや商品名は分かる場合だけ入力できます。</div>
+    <div class="extToolgrid" id="exteriorToolGrid">
+      <button data-ext="concrete">土間コン</button>
+      <button data-ext="block">CB</button>
+      <button data-ext="fence">フェンス</button>
+      <button data-ext="gravel">砂利</button>
+      <button data-ext="lawn">芝生</button>
+      <button data-ext="gatepost">門柱</button>
+      <button data-ext="gate">門扉</button>
+      <button data-ext="roof">カーポート<br>テラス屋根</button>
+      <button data-ext="deck">ウッドデッキ</button>
+      <button data-ext="tile">タイル・平板</button>
+      <button data-ext="planting">植栽</button>
+      <button data-ext="lighting">照明</button>
+      <button data-ext="stairNumber">階段段数 ①②③</button>
+    </div>
+    <div class="extOptions">
+      <div class="row"><label>面系の形</label><select id="extAreaShape"><option value="rect">四角形</option><option value="polygon">多角形</option></select></div>
+      <div class="row"><label>線系の形</label><select id="extLineShape"><option value="polyline">折れ線</option><option value="line">直線</option></select></div>
+      <div id="extSegmentEntry" class="hidden" style="border-top:1px solid #e4e7ec;margin-top:9px;padding-top:8px">
+        <div class="row"><label>幅寸法 mm</label><input id="extSegmentLength" type="number" inputmode="decimal" min="1" step="1" placeholder="空欄なら自由描画"></div>
+        <div class="hint">次の区間の長さを入力して方向を指定します。折れ線は区間ごとに変更できます。縮尺設定済みの場合はその縮尺を使用します。</div>
+        <button type="button" id="extClearSegmentLength" style="width:100%;margin-top:6px">幅寸法指定を解除</button>
+      </div>
+      <div class="hint">土間・砂利・芝生・デッキ・タイル/平板は四角形/多角形を切替。CB・フェンスは折れ線/直線を切替できます。</div>
+    </div>
+  </div>
+  <div class="section hidden" id="surveyToolsSection">
+    <h3>現調専用ツール</h3>
+    <div class="hint" style="margin-bottom:8px">リフォーム現調で基準になるものを素早く記録します。</div>
+    <div class="extToolgrid" id="surveyToolGrid">
+      <button data-survey-tool="foundation">建物基礎</button>
+      <button data-survey-tool="boundaryPoint">境界ポイント</button>
+      <button data-survey-tool="roadBoundaryPoint">道路境界ポイント</button>
+      <button data-survey-tool="existingBlock">既存CB</button>
+      <button data-survey-tool="existingFence">既存フェンス</button>
+    </div>
+    <div class="hint" style="margin-top:8px">建物基礎は折れ線で各辺寸法を自動表示。境界・道路境界はポイント記号で配置します。既存CB・フェンスは既存状態で記録します。</div>
+  </div>
   <div class="section">
-    <h3>作図ツール</h3>
+    <h3>基本作図ツール</h3><div class="hint" style="margin-bottom:8px">削除する場合は「選択」→ 図形をタップ →「選択した記載を削除」。編集ロック中でも選択・削除できます。</div>
     <div class="toolgrid" id="toolGrid">
       <button data-tool="select" class="active">選択</button>
       <button data-tool="line">直線</button>
@@ -121,12 +177,12 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
     <h3>新規作図スタイル</h3>
     <div class="row"><label>線色</label><input id="colorPicker" type="color" value="#1565c0"></div>
     <div class="row"><label>塗りつぶし色</label><input id="fillColorPicker" type="color" value="#90caf9"></div>
-    <div class="row"><label>線幅</label><input id="strokeWidth" type="number" min="1" max="16" value="4"></div>
+    <div class="row"><label>線幅</label><input id="strokeWidth" type="number" min="1" max="16" value="3"></div>
   </div>
   <div class="section" id="surveySection">
     <h3>リフォーム現調</h3>
     <div class="row"><label>現況寸法</label><label style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><input id="showExistingDims" type="checkbox" checked style="width:auto">表示</label></div>
-    <div class="hint">建物基礎・CB・境界などの既存物を描くと、その線・各辺の長さを自動表示します。折れ線は区間ごと、四角形は幅・奥行を表示します。</div>
+    <div class="hint">建物基礎・境界などの既存物は、その線・各辺の長さを自動表示します。CB・フェンスは自動寸法表示せず、必要時のみテキスト・定規で表記してください。折れ線は区間ごと、四角形は幅・奥行を表示します。</div>
   </div>
   <div class="section">
     <h3>縮尺校正</h3>
@@ -138,11 +194,33 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
 
 <section id="workspace">
   <div class="tabletPanelDock" id="tabletPanelDock">
+    <button id="toggleExtPanel" type="button">外構</button>
+    <button id="toggleSurveyPanel" type="button" class="hidden">現調</button>
+    <button id="finishPolylineTablet" type="button" class="hidden" style="font-weight:700">✓ 完了</button>
     <button id="toggleLeftPanel" type="button">作図</button>
     <button id="toggleRightPanel" type="button">編集</button>
   </div>
   <div class="mobileDock" id="mobileDock">
-    <button data-mobile-tool="select">選択</button><button id="mobileEditLock" class="editLocked">🔒 ロック</button><button id="mobileAddImage">画像</button><button data-mobile-tool="line">直線</button><button data-mobile-tool="polyline">折れ線</button><button id="finishPolylineMobile" class="hidden" style="font-weight:700">✓ 完了</button><button data-mobile-tool="range">範囲</button><button data-mobile-tool="leader">引出線</button><button data-mobile-tool="rect">四角</button><button data-mobile-tool="circle">円</button><button data-mobile-tool="polygon">多角</button><button data-mobile-tool="measure">定規（寸法）</button><button data-mobile-tool="text">文字</button><button data-mobile-tool="handwrite">手書き</button><button data-mobile-tool="elevation">高さ</button><button data-mobile-tool="mask">消す</button><button id="mobileDelete" class="danger">削除</button>
+    <button id="mobileExteriorBtn" type="button">外構</button><button id="mobileSurveyBtn" type="button" class="hidden">現調</button><button data-mobile-tool="select">選択</button><button id="mobileEditLock" class="editLocked">🔒 ロック</button><button id="mobileAddImage">画像</button><button data-mobile-tool="line">直線</button><button data-mobile-tool="polyline">折れ線</button><button id="finishPolylineMobile" class="hidden" style="font-weight:700">✓ 完了</button><button data-mobile-tool="range">範囲</button><button data-mobile-tool="leader">引出線</button><button data-mobile-tool="rect">四角</button><button data-mobile-tool="circle">円</button><button data-mobile-tool="polygon">多角</button><button data-mobile-tool="measure">定規（寸法）</button><button data-mobile-tool="text">文字</button><button data-mobile-tool="handwrite">手書き</button><button data-mobile-tool="elevation">高さ</button><button data-mobile-tool="mask">消す</button><button id="mobileDelete" class="danger">削除</button>
+  </div>
+  <div id="surveyMobilePanel" style="display:none;position:absolute;left:8px;right:8px;top:56px;z-index:46;background:rgba(255,255,255,.98);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 12px 30px rgba(17,24,39,.18);max-height:70%;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>現調専用ツール</strong><button id="closeSurveyMobile" type="button">閉じる</button></div>
+    <div class="extToolgrid" id="mobileSurveyToolGrid">
+      <button data-survey-tool="foundation">建物基礎</button>
+      <button data-survey-tool="boundaryPoint">境界ポイント</button>
+      <button data-survey-tool="roadBoundaryPoint">道路境界ポイント</button>
+      <button data-survey-tool="existingBlock">既存CB</button>
+      <button data-survey-tool="existingFence">既存フェンス</button>
+    </div>
+  </div>
+  <div id="extMobilePanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>エクステリア専用ツール</strong><button id="closeExtMobile" type="button">閉じる</button></div>
+    <div class="extToolgrid" id="mobileExteriorToolGrid">
+      <button data-ext="concrete">土間コン</button><button data-ext="block">CB</button><button data-ext="fence">フェンス</button>
+      <button data-ext="gravel">砂利</button><button data-ext="lawn">芝生</button><button data-ext="gatepost">門柱</button>
+      <button data-ext="gate">門扉</button><button data-ext="roof">カーポート/屋根</button><button data-ext="deck">ウッドデッキ</button>
+      <button data-ext="tile">タイル/平板</button><button data-ext="planting">植栽</button><button data-ext="lighting">照明</button><button data-ext="stairNumber">階段段数</button>
+    </div>
   </div>
   <div id="stage"><canvas id="bgCanvas"></canvas><svg id="drawSvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
   <div class="statusbar" id="statusbar"><span class="badge ok">新築モード</span> 図面を読み込むか、作図を開始してください。</div>
@@ -178,6 +256,12 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
         </div>
       </div>
     </div>
+    <div id="exteriorLengthEditor" class="hidden" style="padding:10px 0;border-top:1px solid #edf0f2;margin-top:10px">
+      <h3>幅寸法・区間長さ（mm）</h3>
+      <div class="hint">選択したフェンス・CB・門柱の各区間長を変更します。折れ線の場合、始点を固定して各区間を調整します。線の方向は保持されます。図面上へ寸法は自動表示しません。</div>
+      <div id="exteriorLengthRows" style="margin-top:8px"></div>
+      <button id="applyExteriorLengths" type="button" style="width:100%;margin-top:8px;font-weight:700">幅寸法を反映</button>
+    </div>
     <button id="applyDisplay" style="width:100%;margin-top:8px">表示設定を反映</button>
     <button id="deleteSelected" class="danger" style="width:100%;margin-top:6px">選択した記載を削除</button>
   </div>
@@ -209,7 +293,15 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
   <div class="section" style="margin-top:18px">
     <h3>指示内容（バックデータ）</h3>
     <div class="hint">将来のAI/CAD連携用です。通常の指示図作成では必要なときだけ設定します。</div>
-    <div class="row"><label>種別</label><select id="selType"><option value="generic">一般</option><option value="boundary">境界</option><option value="building">建物</option><option value="concrete">土間</option><option value="block">CB</option><option value="fence">フェンス</option><option value="gatepost">門柱</option><option value="deck">デッキ</option><option value="planting">植栽</option><option value="road">道路</option><option value="demolish">撤去</option></select></div>
+    <button id="editExteriorInfo" class="hidden" type="button" style="width:100%;margin:8px 0;font-weight:700">外構情報・注記を編集</button>
+    <div id="extAnnotationActions" class="hidden" style="margin:6px 0 12px;padding:8px;border:1px solid #e4e7ec;border-radius:8px">
+      <div class="hint" style="margin-bottom:7px">図形は残して、引出し線と注釈だけを操作します。</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <button id="removeExteriorAnnotation" type="button">注釈を削除</button>
+        <button id="placeExteriorAnnotation" type="button">注釈を再配置</button>
+      </div>
+    </div>
+    <div class="row"><label>種別</label><select id="selType"><option value="generic">一般</option><option value="boundary">境界</option><option value="boundary_point">境界ポイント</option><option value="road_boundary_point">道路境界ポイント</option><option value="building_foundation">建物基礎</option><option value="building">建物</option><option value="concrete">土間</option><option value="block">CB</option><option value="fence">フェンス</option><option value="gravel">砂利</option><option value="lawn">芝生</option><option value="gatepost">門柱</option><option value="gate">門扉</option><option value="roof">カーポート/屋根</option><option value="deck">デッキ</option><option value="tile">タイル/平板</option><option value="planting">植栽</option><option value="lighting">照明</option><option value="road">道路</option><option value="demolish">撤去</option></select></div>
     <div class="row"><label>状態</label><select id="selStatus"><option value="existing">既存</option><option value="new">新設</option><option value="remove">撤去</option><option value="check">要確認</option></select></div>
     <div class="row"><label>高さmm</label><input id="selHeight" type="number" placeholder="1800"></div>
     <div class="row"><label>商品</label><input id="selProduct" placeholder="LIXIL フェンスAA"></div>
@@ -222,12 +314,40 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
 <div class="elevModal" id="textModal" aria-hidden="true">
   <div class="elevCard" role="dialog" aria-modal="true" aria-labelledby="textTitle">
     <h3 id="textTitle">テキストを入力</h3>
-    <div class="hint" style="margin-bottom:6px">日本語キーボード入力。Apple Pencilの文字認識が英字になる場合は下の「日本語をそのまま手書き」を使用してください。</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <button id="useKeyboardInput" type="button" style="font-weight:700;min-height:46px">⌨ キーボード入力</button>
+      <button id="switchToHandwrite" type="button" style="font-weight:700;min-height:46px">✍ 手書き注記</button>
+    </div>
+    <div class="hint" style="margin-bottom:6px">通常は「⌨ キーボード入力」を選択してください。Apple Pencilで文字そのものを書く場合は「✍ 手書き注記」を使用します。</div>
     <textarea id="textInput" rows="3" lang="ja" inputmode="text" enterkeyhint="done" autocorrect="on" autocomplete="on" spellcheck="true" placeholder="例：既存ブロック、フェンス H1800"></textarea>
-    <button id="switchToHandwrite" type="button" style="width:100%;margin-top:8px">✍ 日本語をそのまま手書き</button>
     <div class="row" style="margin-top:10px"><label>背景</label><select id="textBgMode"><option value="transparent">透明</option><option value="fill">塗りつぶし</option></select></div>
     <div class="row"><label>背景色</label><input id="textBgColor" type="color" value="#ffffff"></div>
     <div class="elevActions"><button id="textCancel">キャンセル</button><button id="textOk" class="active">配置</button></div>
+  </div>
+</div>
+
+<div class="elevModal" id="exteriorInfoModal" aria-hidden="true">
+  <div class="elevCard" role="dialog" aria-modal="true" aria-labelledby="exteriorInfoTitle" style="width:min(430px,94vw)">
+    <h3 id="exteriorInfoTitle">外構情報</h3>
+    <div class="hint" style="margin-bottom:8px">分かる項目だけ入力してください。空欄でもそのまま作図できます。</div>
+    <div class="extModalGrid">
+      <div class="extInfoRow hidden" id="extHeightRow"><label>高さ</label><input id="extHeight" inputmode="numeric" placeholder="例：1200（mm）"></div>
+      <div class="extInfoRow hidden" id="extDepthRow"><label>奥行/厚み</label><input id="extDepth" type="number" min="1" step="1" value="120"><span style="font-size:12px;color:var(--muted)">mm</span></div>
+      <div class="extInfoRow hidden" id="extRowsRow"><label>段数</label><input id="extRows" inputmode="numeric" placeholder="例：3"></div>
+      <div class="extInfoRow hidden" id="extProductRow"><label>商品名</label><input id="extProduct" placeholder="分かる場合のみ"></div>
+      <div class="extInfoRow hidden" id="extFinishRow"><label>仕上げ</label><input id="extFinish" placeholder="例：セラウォール"></div>
+      <div class="extInfoRow hidden" id="extSpeciesRow"><label>樹種</label><input id="extSpecies" placeholder="例：アオダモ"></div>
+      <div class="extInfoRow hidden" id="extLawnTypeRow"><label>芝種別</label><select id="extLawnType"><option value="">未指定</option><option>人工芝</option><option>天然芝</option></select></div>
+      <div class="extInfoRow hidden" id="extRoofTypeRow"><label>種類</label><select id="extRoofType"><option>カーポート</option><option>テラス屋根</option></select></div>
+      <div class="extInfoRow hidden" id="extSurfaceTypeRow"><label>種類</label><select id="extSurfaceType"><option>タイル</option><option>平板</option></select></div>
+      <div class="extInfoRow hidden" id="extGateModeRow"><label>開き方</label><select id="extGateMode"><option value="single">片開き</option><option value="double">両開き</option></select></div>
+      <div class="extInfoRow hidden" id="extLightingTypeRow"><label>照明種類</label><select id="extLightingType"><option value="">未指定</option><option>ライン照明</option><option>スポット照明</option><option>ポールライト</option></select></div>
+    </div>
+    <div class="extModalActions">
+      <button id="extInfoSkip" type="button">情報なし・注記なし</button>
+      <button id="extInfoSaveOnly" type="button">情報だけ保存</button>
+      <button id="extInfoPlace" type="button" class="primary">保存して引出し注記を配置</button>
+    </div>
   </div>
 </div>
 
@@ -272,10 +392,14 @@ function setTabletPanel(which){
 }
 toggleLeftPanel?.addEventListener('click',e=>{e.stopPropagation();setTabletPanel('left')});
 toggleRightPanel?.addEventListener('click',e=>{e.stopPropagation();setTabletPanel('right')});
+const toggleExtPanel=$('#toggleExtPanel');
+toggleExtPanel?.addEventListener('click',e=>{e.stopPropagation();setTabletPanel('left');setTimeout(()=>$('#exteriorToolsSection')?.scrollIntoView({block:'start'}),80)});
+
 
 let W=1400,H=1000, zoom=1, panX=30, panY=30, mode='new', tool='select';
 let editUnlocked=false;
 let objects=[], selectedId=null, drawing=null, points=[], polygonHover=null, pathHover=null, calibrating=false, calibPts=[], pxPerMm=null;
+let nextStairNumber=1;
 let undoStack=[];
 const UNDO_LIMIT=60;
 function snapshotState(){return {objects:JSON.parse(JSON.stringify(objects)),selectedId,pxPerMm};}
@@ -296,6 +420,36 @@ let exactLineStart=null, exactLineDirection=null;
 let favorites=JSON.parse(localStorage.getItem('exteriorFavorites')||'[]');
 let catalogRefs=JSON.parse(localStorage.getItem('exteriorCatalogRefs')||'[]');
 
+const EXTERIOR_PRESETS={
+  concrete:{label:'土間コン',base:'area',type:'concrete',color:'#727b84',fill:'#aeb4b9',width:1},
+  block:{label:'CB',base:'line',type:'block',color:'#4b5563',fill:'#d1d5db',width:3,depth_mm:120},
+  fence:{label:'フェンス',base:'line',type:'fence',color:'#111827',fill:'#ffffff',width:3},
+  gravel:{label:'砂利',base:'area',type:'gravel',color:'#71716a',fill:'#aaa99b',width:1},
+  lawn:{label:'芝生',base:'area',type:'lawn',color:'#53632d',fill:'#879345',width:1},
+  gatepost:{label:'門柱',base:'line',type:'gatepost',color:'#4b5563',fill:'#d1d5db',width:1,depth_mm:120},
+  gate:{label:'門扉',base:'lineSingle',type:'gate',color:'#111827',fill:'#ffffff',width:2},
+  roof:{label:'カーポート',base:'rect',type:'roof',color:'#334155',fill:'#c5ddf5',width:3},
+  deck:{label:'ウッドデッキ',base:'area',type:'deck',color:'#8b5e3c',fill:'#e7c9a9',width:1},
+  tile:{label:'タイル',base:'area',type:'tile',color:'#8a8175',fill:'#efe7da',width:1},
+  planting:{label:'植栽',base:'circle',type:'planting',color:'#111827',fill:'#a3e635',width:1},
+  lighting:{label:'照明',base:'freehand',type:'lighting',color:'#d89b00',fill:'#ffffff',width:3},
+  stairNumber:{label:'階段段数',base:'stairNumber',type:'stairNumber',color:'#111827',fill:'#ffffff',width:1}
+};
+let activeExterior=null;
+let activeSurvey=null;
+const SURVEY_PRESETS={
+  foundation:{label:'建物基礎',tool:'polyline',color:'#374151',width:3,type:'building_foundation'},
+  boundaryPoint:{label:'境界ポイント',tool:'surveyPoint',color:'#111827',type:'boundary_point'},
+  roadBoundaryPoint:{label:'道路境界ポイント',tool:'surveyPoint',color:'#b54708',type:'road_boundary_point'},
+  existingBlock:{label:'既存CB',tool:'polyline',color:'#4b5563',width:3,type:'block'},
+  existingFence:{label:'既存フェンス',tool:'polyline',color:'#111827',width:3,type:'fence'}
+};
+let pendingExteriorInfoId=null;
+let placingExteriorAnnotationId=null;
+let lastPolylineTapAt=0;
+let lastPolylineTapPoint=null;
+
+
 function updateEditLockUI(){
   const desktop=$('#editLockBtn'), mobile=$('#mobileEditLock');
   [desktop,mobile].filter(Boolean).forEach(b=>{b.classList.toggle('editLocked',!editUnlocked);b.classList.toggle('editUnlocked',editUnlocked)});
@@ -307,7 +461,7 @@ function setEditUnlocked(next,{silent=false}={}){
   if(editUnlocked && tool!=='select') setTool('select');
   if(!editUnlocked){objectDrag=null;}
   updateEditLockUI();render();
-  if(!silent) updateStatus(editUnlocked?'編集ロックを解除しました。選択した図形を移動・変形できます。':'編集ロック中です。既存図形に触れても移動しません。');
+  if(!silent) updateStatus(editUnlocked?'編集ロックを解除しました。図形の移動・変形、引出し注記のオレンジ●移動ができます。':'編集ロック中です。既存図形や引出し注記は移動しません。');
 }
 function toggleEditLock(){setEditUnlocked(!editUnlocked)}
 
@@ -325,6 +479,9 @@ function addMeasuredEdgeDim(a,b,mm,offset=-12/zoom){const mx=(a.x+b.x)/2,my=(a.y
 function renderShapeDimensions(o){if(o.kind==='rect'){addDimText(o.x+o.w/2,o.y-10,`W ${fmtLenPx(o.w)}`);addDimText(o.x+o.w+10,o.y+o.h/2,`D ${fmtLenPx(o.h)}`,'start')}else if(o.kind==='circle'){addDimText(o.cx,o.cy-o.ry-10,`横 ${fmtLenPx(o.rx*2)} × 縦 ${fmtLenPx(o.ry*2)}`)}else if(o.kind==='polygon'&&o.points?.length>1){for(let i=0;i<o.points.length-1;i++)addEdgeDim(o.points[i],o.points[i+1],-10);if(o.closed&&o.points.length>2)addEdgeDim(o.points[o.points.length-1],o.points[0],-10)}}
 function renderExistingDimensions(o){
   if(!$('#showExistingDims')?.checked || mode!=='survey')return;
+  // 外構専用図形はすべて寸法非表示。作図の概算値を設計寸法と誤認させない。
+  // 現調専用の既存CB/フェンスにも寸法は付けず、建物基礎の寸法は維持。
+  if(o.exteriorType || ['existingBlock','existingFence'].includes(o.surveyType))return;
   if(o.kind==='line'&&o.a&&o.b){
     if(o.hiddenLineDim)return;
     const mm=(o.value_mm>0)?o.value_mm:mmDistance(o.a,o.b);
@@ -345,36 +502,445 @@ function renderExistingDimensions(o){
   if(o.kind==='polygon'&&o.points?.length>1){const pts=rotatedShapePoints(o);for(let i=0;i<pts.length-1;i++)addEdgeDim(pts[i],pts[i+1],-12/zoom);if(o.closed&&pts.length>2)addEdgeDim(pts[pts.length-1],pts[0],-12/zoom)}
 }
 function uid(){return 'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+function extCompatibleKind(preset,o){
+  if(!preset||!o)return false;
+  if(preset.base==='area')return ['rect','polygon'].includes(o.kind);
+  if(preset.base==='line')return ['line','polyline'].includes(o.kind);
+  if(preset.base==='lineSingle')return o.kind==='line';
+  return preset.base===o.kind;
+}
+function applyExteriorPreset(o,key){
+  const p=EXTERIOR_PRESETS[key];if(!p||!extCompatibleKind(p,o))return o;
+  o.exteriorType=key;o.type=p.type;o.status='new';o.color=p.color;o.fillColor=p.fill;o.width=p.width;
+  o.fillOpacity=(['concrete','gravel','lawn'].includes(key)?.62:(key==='roof'?.27:(['deck','tile'].includes(key)?.30:.30)));
+  if(key==='block')o.thickness_mm=o.thickness_mm||p.depth_mm||120;
+  if(key==='gatepost')o.thickness_mm=o.thickness_mm||p.depth_mm||120;
+  if(key==='gate')o.gateMode=o.gateMode||'single';
+  if(key==='roof')o.roofType=o.roofType||'カーポート';
+  if(key==='tile')o.surfaceType=o.surfaceType||'タイル';
+  return o;
+}
+function exteriorToolKind(key){
+  const p=EXTERIOR_PRESETS[key];if(!p)return 'select';
+  if(p.base==='area')return $('#extAreaShape')?.value||'rect';
+  if(p.base==='line')return $('#extLineShape')?.value||'polyline';
+  if(p.base==='lineSingle')return 'line';
+  return p.base;
+}
+function syncExteriorButtons(){
+  $$('[data-ext]').forEach(b=>b.classList.toggle('active',b.dataset.ext===activeExterior));
+}
+function setExteriorTool(key){
+  const p=EXTERIOR_PRESETS[key];if(!p)return;
+  activeSurvey=null;syncSurveyButtons();
+  if(activeExterior!==key&&$('#extSegmentLength'))$('#extSegmentLength').value='';
+  activeExterior=key;
+  $('#colorPicker').value=p.color;$('#fillColorPicker').value=p.fill;$('#strokeWidth').value=p.width;
+  const t=exteriorToolKind(key);
+  setTool(t,true);
+  syncExteriorButtons();
+  $('#extSegmentEntry')?.classList.toggle('hidden',!exteriorIsLengthTool(key));
+  $('#extMobilePanel')?.classList.remove('open');
+  updateStatus(key==='stairNumber'
+    ? '階段段数：位置をタップするたびに①②③…を配置します。背景・注釈なし。'
+    : `${p.label}：描画してください。描画後、分かる情報だけ入力できます。`);
+}
+
+function syncSurveyButtons(){
+  $$('[data-survey-tool]').forEach(b=>b.classList.toggle('active',b.dataset.surveyTool===activeSurvey));
+}
+function setSurveyTool(key){
+  const p=SURVEY_PRESETS[key];if(!p)return;
+  activeExterior=null;syncExteriorButtons();activeSurvey=key;
+  $('#colorPicker').value=p.color;if(p.width)$('#strokeWidth').value=p.width;
+  let t=p.tool;
+  if(key==='existingBlock'){activeExterior='block';t=$('#extLineShape')?.value||'polyline'}
+  if(key==='existingFence'){activeExterior='fence';t=$('#extLineShape')?.value||'polyline'}
+  setTool(t,true,true);syncSurveyButtons();
+  $('#surveyMobilePanel').style.display='none';
+  updateStatus(`${p.label}：${t==='surveyPoint'?'配置位置をタップしてください':'作図してください'}`);
+}
+function applySurveyPreset(o,key){
+  const p=SURVEY_PRESETS[key];if(!p)return o;
+  o.surveyType=key;o.type=p.type;o.status='existing';o.color=p.color;if(p.width)o.width=p.width;
+  if(key==='foundation'){o.exteriorType=null;o.note=o.note||'建物基礎'}
+  if(key==='existingBlock'){o.exteriorType='block';o.thickness_mm=o.thickness_mm||120}
+  if(key==='existingFence'){o.exteriorType='fence'}
+  return o;
+}
+function surveyPointObject(p,key){
+  const preset=SURVEY_PRESETS[key];
+  return {id:uid(),kind:'surveyPoint',x:p.x,y:p.y,surveyType:key,type:preset.type,status:'existing',color:preset.color,fillColor:'#fff',width:1,height_mm:null,product:'',note:'',mode};
+}
+function syncModeSpecificUi(){
+  const isSurvey=mode==='survey';
+  $('#surveyToolsSection')?.classList.toggle('hidden',!isSurvey);
+  $('#mobileSurveyBtn')?.classList.toggle('hidden',!isSurvey);
+  $('#toggleSurveyPanel')?.classList.toggle('hidden',!isSurvey);
+  if(!isSurvey){$('#surveyMobilePanel').style.display='none';activeSurvey=null;syncSurveyButtons()}
+}
+function blockVisualDepth(o){const mm=o.thickness_mm||120;return pxPerMm?Math.max(3,mm*pxPerMm):12}
+function renderBlockLine(o,points){
+  if(!points?.length)return;
+  const d=blockVisualDepth(o);
+  const pts=points.map(p=>`${p.x},${p.y}`).join(' ');
+  // 太い透明ヒット領域を先に置き、CB全体を確実に選択できるようにする
+  const hit=mk('polyline',{
+    points:pts,fill:'none',stroke:'rgba(0,0,0,0.001)',
+    'stroke-width':Math.max(d+16,22/zoom),
+    'stroke-linejoin':'round','stroke-linecap':'round'
+  });
+  hit.dataset.id=o.id;
+  hit.style.pointerEvents='stroke';
+  hit.style.cursor=tool==='select'?(editUnlocked?'move':'pointer'):'default';
+  hit.addEventListener('pointerdown',ev=>{
+    if(tool==='select'){ev.preventDefault();ev.stopPropagation();startObjectDrag(o,ev)}
+  });
+  svg.appendChild(hit);
+
+  const outer=mk('polyline',{points:pts,fill:'none',stroke:'#4b5563','stroke-width':d+2,'stroke-linejoin':'miter','stroke-linecap':'butt'});
+  const inner=mk('polyline',{points:pts,fill:'none',stroke:o.fillColor||'#d1d5db','stroke-width':d,'stroke-linejoin':'miter','stroke-linecap':'butt'});
+  [outer,inner].forEach(x=>{
+    x.dataset.id=o.id;
+    x.style.pointerEvents='stroke';
+    x.style.cursor=tool==='select'?(editUnlocked?'move':'pointer'):'default';
+    x.addEventListener('pointerdown',ev=>{
+      if(tool==='select'){ev.preventDefault();ev.stopPropagation();startObjectDrag(o,ev)}
+    });
+    svg.appendChild(x)
+  });
+}
+
+function exteriorLabelLines(o){
+  if(!o?.exteriorType)return [];
+  const h=o.height_mm?`H${Math.round(o.height_mm)}`:'';
+  const product=(o.product||'').trim();
+  switch(o.exteriorType){
+    case 'concrete': return ['土間コン',product].filter(Boolean);
+    case 'block': return ['CB',h,o.rows?`${o.rows}段`:'',product].filter(Boolean);
+    case 'fence': return ['フェンス',h,product].filter(Boolean);
+    case 'gravel': return ['砂利',product].filter(Boolean);
+    case 'lawn': return [o.lawnType||'芝生',product].filter(Boolean);
+    case 'gatepost': return ['門柱',h,o.finish||'',product].filter(Boolean);
+    case 'gate': return ['門扉',h,product].filter(Boolean);
+    case 'roof': return [o.roofType||'カーポート',h,product].filter(Boolean);
+    case 'deck': return ['ウッドデッキ',product].filter(Boolean);
+    case 'tile': return [o.surfaceType||'タイル',product].filter(Boolean);
+    case 'planting': return [o.species||'植栽',h].filter(Boolean);
+    case 'lighting': return [o.lightingType||'照明',product].filter(Boolean);
+  }
+  return [];
+}
+
+function makeExteriorPattern(o){
+  if(!o?.exteriorType||!['concrete','gravel','lawn','deck','tile'].includes(o.exteriorType))return null;
+  let defs=svg.querySelector('defs');if(!defs){defs=mk('defs');svg.prepend(defs)}
+  const id=`extpat_${String(o.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
+  if(svg.querySelector('#'+id))return `url(#${id})`;
+
+  let size=42;
+  if(o.exteriorType==='tile')size=pxPerMm?Math.max(8,300*pxPerMm):36;
+  if(o.exteriorType==='gravel')size=30;
+  if(o.exteriorType==='lawn')size=34;
+  if(o.exteriorType==='concrete')size=52;
+
+  const pat=mk('pattern',{id,patternUnits:'userSpaceOnUse',width:size,height:size});
+  pat.appendChild(mk('rect',{
+    x:0,y:0,width:size,height:size,
+    fill:o.fillColor||'#eee',
+    'fill-opacity':(['concrete','gravel','lawn'].includes(o.exteriorType)
+      ? Math.max(.62, o.fillOpacity??.62)
+      : (o.fillOpacity??.30))
+  }));
+
+  if(o.exteriorType==='concrete'){
+    // 図面の下が透けるようにかなり薄めにしつつ、コンクリートらしい落ち着いた表現
+    const g=mk('g',{stroke:'#76808b','stroke-width':1.1,'stroke-opacity':0.62});
+    // 既存仕様の「3本斜線」を控えめに残し、図面サンプルのような淡い印象に寄せる
+    [
+      [8,36,22,22],[14,36,28,22],[20,36,34,22],
+      [34,16,48,2],[40,16,54,2]
+    ].forEach(([x1,y1,x2,y2])=>g.appendChild(mk('line',{x1,y1,x2,y2})));
+    pat.appendChild(g);
+  }else if(o.exteriorType==='gravel'){
+    // 薄いベージュ地に小さな粒表現を散らす
+    const dotData=[
+      [5,5,1.4,'#5e6260',.78],[11,8,1.0,'#70736b',.67],[18,6,1.2,'#686b63',.72],[25,9,1.1,'#888a7f',.62],
+      [8,15,1.2,'#6f6559',.45],[15,17,1.0,'#9a907f',.34],[22,15,1.4,'#7d7467',.50],[27,19,1.0,'#8b8174',.40],
+      [4,24,1.1,'#8b8174',.40],[12,26,1.3,'#6f6559',.48],[19,24,1.0,'#9a907f',.34],[25,26,1.2,'#7d7467',.44]
+    ];
+    dotData.forEach(([cx,cy,r,fill,op])=>pat.appendChild(mk('circle',{cx,cy,r,fill,'fill-opacity':op})));
+    // 小さな不定形粒も少し混ぜる
+    [[9,11,13,12],[20,10,24,11],[6,20,9,21],[23,21,27,22]].forEach(([x1,y1,x2,y2])=>{
+      pat.appendChild(mk('line',{x1,y1,x2,y2,stroke:'#7c7468','stroke-width':0.9,'stroke-opacity':0.28,'stroke-linecap':'round'}))
+    });
+  }else if(o.exteriorType==='lawn'){
+    // オリーブ系の色味＋まばらな芝の目
+    const g=mk('g',{stroke:'#404f24','stroke-width':1.1,'stroke-opacity':0.74,'stroke-linecap':'round'});
+    [
+      [7,7,10,11],[15,6,18,10],[24,8,27,12],
+      [10,16,13,20],[19,15,22,19],[28,17,31,21],
+      [6,25,9,29],[15,26,18,30],[24,24,27,28]
+    ].forEach(([x1,y1,x2,y2])=>g.appendChild(mk('line',{x1,y1,x2,y2})));
+    pat.appendChild(g);
+    const dots=mk('g',{'fill-opacity':0.42,fill:'#39491f'});
+    [[5,12],[13,12],[22,13],[30,11],[8,21],[17,22],[26,21],[12,31],[21,31],[29,29]].forEach(([cx,cy])=>dots.appendChild(mk('circle',{cx,cy,r:0.8})));
+    pat.appendChild(dots);
+  }else if(o.exteriorType==='deck'){
+    const g=mk('g',{stroke:'#a8754f','stroke-width':1,'stroke-opacity':0.42});
+    for(let y=0;y<=size;y+=12)g.appendChild(mk('line',{x1:0,y1:y,x2:size,y2:y}));
+    pat.appendChild(g);
+  }else if(o.exteriorType==='tile'){
+    const g=mk('g',{stroke:'#b6ada0','stroke-width':1,'stroke-opacity':0.72});
+    g.appendChild(mk('line',{x1:0,y1:0,x2:size,y2:0}));
+    g.appendChild(mk('line',{x1:0,y1:0,x2:0,y2:size}));
+    pat.appendChild(g);
+  }
+  defs.appendChild(pat);return `url(#${id})`;
+}
+
+function exteriorFill(o){return makeExteriorPattern(o)||(o.fillColor||'#90caf9')}
+function exteriorShapeAnchor(o){const b=bounds(o);return b?{x:b.x+b.w/2,y:b.y+b.h/2}:{x:o.x||0,y:o.y||0}}
+function bindExtElement(el,o,mode='move'){el.dataset.id=o.id;el.style.pointerEvents='all';el.style.cursor=(editUnlocked&&mode==='annotation')?'grab':(editUnlocked?'move':'pointer');el.addEventListener('pointerdown',ev=>startObjectDrag(o,ev,mode))}
+function roofOutlineColor(o){return !o.color||o.color==='#64748b'?'#334155':o.color}
+function renderExteriorDecoration(o){
+  if(!o?.exteriorType)return;
+  if(o.exteriorType==='fence'){
+    const pts=o.kind==='polyline'?o.points:(o.a&&o.b?[o.a,o.b]:[]);
+    pts.forEach(pt=>{const c=mk('circle',{cx:pt.x,cy:pt.y,r:4.2,fill:o.color||'#111827'});bindExtElement(c,o);svg.appendChild(c)});
+  }
+  if(o.exteriorType==='roof'&&o.kind==='rect'){
+    const pts=rotatedShapePoints(o);if(pts.length===4){
+      [[0,2],[1,3]].forEach(([a,b])=>{const l=mk('line',{x1:pts[a].x,y1:pts[a].y,x2:pts[b].x,y2:pts[b].y,stroke:roofOutlineColor(o),'stroke-width':1.7,'stroke-linecap':'round'});bindExtElement(l,o);svg.appendChild(l)})
+    }
+  }
+  if(o.exteriorType==='gate'&&o.a&&o.b){
+    const a=o.a,b=o.b,dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
+    // 点線は実際の丁番を円心に、閉じた扉の自由端から開いた自由端まで90度回転する軌跡。
+    // SVGの A コマンドは端点のみから円心を自動選択するため、膨らみが逆になる
+    // 場合がある。円心・角度を明示した複数点の正円弧として表現する。
+    function rotatedTip(hinge,tip,angle){
+      const vx=tip.x-hinge.x,vy=tip.y-hinge.y,c=Math.cos(angle),sn=Math.sin(angle);
+      return {x:hinge.x+vx*c-vy*sn,y:hinge.y+vx*sn+vy*c};
+    }
+    function sweepFromTip(hinge,tip,angle){
+      const steps=32;
+      const parts=[];
+      for(let j=0;j<=steps;j++){
+        const pt=rotatedTip(hinge,tip,angle*j/steps);
+        parts.push(`${j?'L':'M'} ${pt.x.toFixed(3)} ${pt.y.toFixed(3)}`);
+      }
+      const arc=mk('path',{d:parts.join(' '),fill:'none',stroke:o.color,
+        'stroke-width':1.2,'stroke-dasharray':'5 4','stroke-linecap':'round'});
+      bindExtElement(arc,o);svg.appendChild(arc);
+      return rotatedTip(hinge,tip,angle);
+    }
+    const tip=(hinge,free,angle)=>{
+      const opened=sweepFromTip(hinge,free,angle);
+      const leaf=mk('line',{x1:hinge.x,y1:hinge.y,x2:opened.x,y2:opened.y,
+        stroke:o.color,'stroke-width':1.5,'stroke-linecap':'round'});
+      bindExtElement(leaf,o);svg.appendChild(leaf);
+    };
+    if(o.gateMode==='double'){
+      const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+      // 閉じた扉の中央自由端から、左右それぞれの丁番に対して正しい90度弧。
+      tip(a,m,-Math.PI/2);
+      tip(b,m, Math.PI/2);
+    }else{
+      tip(a,b,-Math.PI/2);
+    }
+  }
+}
+function stairCircledNumber(n){
+  if(n>=1&&n<=20)return String.fromCodePoint(0x2460+n-1);
+  if(n>=21&&n<=35)return String.fromCodePoint(0x3251+n-21);
+  if(n>=36&&n<=50)return String.fromCodePoint(0x32b1+n-36);
+  return `(${n})`;
+}
+function renderStairNumber(o){
+  if(o.kind!=='stairNumber')return;
+  // 数字のみ：背景、枠線、塗りつぶし、引出し線は一切なし。
+  const t=mk('text',{x:o.x,y:o.y,'text-anchor':'middle',
+    fill:'#111827','font-size':o.fontSize||22,'font-weight':'700',
+    'dominant-baseline':'middle'});
+  t.textContent=stairCircledNumber(o.step||1);
+  bindExtElement(t,o);
+  svg.appendChild(t);
+}
+function renderPlainTextAnnotation(o){
+  if(o.kind!=='text')return;
+  const lines=String(o.text||'').split(/\n/);
+  if(!lines.length)return;
+  // エクステリアの引出し注記と同じ文字・白背景。ただし引出し線は描かない。
+  const size=16,lineGap=21,padX=8;
+  const textWidth=line=>[...line].reduce((sum,ch)=>sum+(/[\x00-\x7f]/.test(ch)?8.5:16),0);
+  const width=Math.max(60,...lines.map(textWidth))+padX*2;
+  const height=(lines.length-1)*lineGap+size+13;
+  const x=o.x-8,y=o.y-29;
+  const group=mk('g',{'data-plain-text-annotation':o.id});
+  const bg=mk('rect',{x,y,width,height,rx:3,ry:3,
+    fill:'#ffffff','fill-opacity':.96,stroke:'#cbd5e1','stroke-width':.65});
+  bindExtElement(bg,o);group.appendChild(bg);
+  lines.forEach((line,i)=>{
+    const t=mk('text',{x:o.x,y:o.y-9+i*lineGap,'text-anchor':'start',
+      fill:'#111827','font-size':size,'font-weight':i===0?'700':'550',
+      stroke:'#ffffff','stroke-width':2,'paint-order':'stroke','stroke-linejoin':'round'});
+    t.textContent=line;bindExtElement(t,o);group.appendChild(t);
+  });
+  svg.appendChild(group);
+}
+function renderExteriorAnnotation(o){
+  if(!o?.exteriorType||!o.annotation)return;
+  const lines=exteriorLabelLines(o);if(!lines.length)return;
+  const a=exteriorShapeAnchor(o),p=o.annotation,dir=p.x>=a.x?1:-1;
+  const elbow={x:p.x-dir*34,y:p.y};
+  const group=mk('g',{'data-exterior-annotation':o.id});
+  // 注記を独立した最前面レイヤーに置き、塗りや模様で薄くならないようにする。
+  // 始点は必ず黒い●で明示。線は注記の端で終了させる。
+  const l1=mk('line',{x1:a.x,y1:a.y,x2:elbow.x,y2:elbow.y,stroke:'#1f2937','stroke-width':1.3});
+  const l2=mk('line',{x1:elbow.x,y1:elbow.y,x2:p.x,y2:p.y,stroke:'#1f2937','stroke-width':1.3});
+  const dot=mk('circle',{cx:a.x,cy:a.y,r:4.4,fill:'#1f2937',stroke:'#ffffff','stroke-width':1});
+  [l1,l2,dot].forEach(el=>{bindExtElement(el,o,'annotation');group.appendChild(el)});
+  // 行ごとに文字幅を概算。日本語と英数字を考慮して白い背景を作り、下図を遮る。
+  const size=16, lineGap=21, paddingX=8;
+  const textWidth=line=>[...line].reduce((sum,ch)=>sum+(/[\x00-\x7f]/.test(ch)?8.5:16),0);
+  const width=Math.max(90,...lines.map(textWidth))+paddingX*2;
+  const x=dir>0?p.x:p.x-width;
+  const y=p.y-29;
+  const height=(lines.length-1)*lineGap+size+13;
+  const bg=mk('rect',{x,y,width,height,rx:3,ry:3,fill:'#ffffff','fill-opacity':.96,stroke:'#cbd5e1','stroke-width':.65});
+  bindExtElement(bg,o,'annotation');group.appendChild(bg);
+  lines.forEach((line,i)=>{
+    const tx=dir>0?p.x+paddingX:p.x-paddingX;
+    const t=mk('text',{x:tx,y:p.y-9+i*lineGap,'text-anchor':dir>0?'start':'end',fill:'#111827','font-size':size,'font-weight':i===0?'700':'550',stroke:'#ffffff','stroke-width':2,'paint-order':'stroke','stroke-linejoin':'round'});
+    t.textContent=line;bindExtElement(t,o,'annotation');group.appendChild(t);
+  });
+  svg.appendChild(group);
+}
+function openExteriorInfo(id){
+  const o=objects.find(x=>x.id===id);if(!o?.exteriorType)return;
+  pendingExteriorInfoId=id;
+  const modal=$('#exteriorInfoModal');modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  $('#exteriorInfoTitle').textContent=`${EXTERIOR_PRESETS[o.exteriorType]?.label||'外構'} の情報`;
+  const show=(id,on)=>$('#'+id)?.classList.toggle('hidden',!on);
+  const k=o.exteriorType;
+  show('extHeightRow',['block','fence','gatepost','gate','roof','planting'].includes(k));
+  show('extDepthRow',['block','gatepost'].includes(k));
+  show('extRowsRow',k==='block');show('extProductRow',['concrete','block','fence','gravel','lawn','gatepost','gate','roof','deck','tile','lighting'].includes(k));
+  show('extFinishRow',k==='gatepost');show('extSpeciesRow',k==='planting');show('extLawnTypeRow',k==='lawn');show('extRoofTypeRow',k==='roof');show('extSurfaceTypeRow',k==='tile');show('extGateModeRow',k==='gate');show('extLightingTypeRow',k==='lighting');
+  $('#extHeight').value=o.height_mm??'';$('#extDepth').value=((k==='block'||k==='gatepost')?(o.thickness_mm||120):(o.depth_mm||120));$('#extRows').value=o.rows??'';$('#extProduct').value=o.product||'';$('#extFinish').value=o.finish||'';$('#extSpecies').value=o.species||'';$('#extLawnType').value=o.lawnType||'';$('#extRoofType').value=o.roofType||'カーポート';$('#extSurfaceType').value=o.surfaceType||'タイル';$('#extGateMode').value=o.gateMode||'single';$('#extLightingType').value=o.lightingType||'';
+}
+function closeExteriorInfo(){const m=$('#exteriorInfoModal');m.classList.remove('open');m.setAttribute('aria-hidden','true');pendingExteriorInfoId=null}
+function saveExteriorInfo(placeAnnotation=false){
+  const o=objects.find(x=>x.id===pendingExteriorInfoId);if(!o)return closeExteriorInfo();
+  pushHistory();
+  const hv=Number($('#extHeight').value);o.height_mm=hv>0?hv:null;
+  const dv=Number($('#extDepth').value);
+  if(o.exteriorType==='block')o.thickness_mm=dv>0?dv:120;
+  if(o.exteriorType==='gatepost')o.thickness_mm=dv>0?dv:120;
+  const rv=Number($('#extRows').value);o.rows=rv>0?Math.round(rv):null;
+  o.product=$('#extProduct').value.trim();o.finish=$('#extFinish').value.trim();o.species=$('#extSpecies').value.trim();o.lawnType=$('#extLawnType').value;o.roofType=$('#extRoofType').value;o.surfaceType=$('#extSurfaceType').value;o.gateMode=$('#extGateMode').value;o.lightingType=$('#extLightingType').value;
+  const id=o.id;closeExteriorInfo();render();syncInspector();
+  if(placeAnnotation){
+    placingExteriorAnnotationId=id;
+    workspace.style.cursor='crosshair';
+    updateStatus('引出し注記を置く位置をキャンバス上でタップしてください。図形の上でも配置できます。');
+  } else updateStatus('外構情報を保存しました。');
+}
+
 function currentStyle(){return {color:$('#colorPicker').value,fillColor:$('#fillColorPicker').value,fillOpacity:.30,width:+$('#strokeWidth').value||4,type:'generic',status:'existing'}}
 function rangeFrame(o){const a=o.a,b=o.b;const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;const ux=dx/L,uy=dy/L;let nx=-uy,ny=ux;if(ny>0){nx=-nx;ny=-ny}if(Math.abs(ny)<0.15&&nx<0){nx=-nx;ny=-ny}const defaultOff=Math.max(36,Math.min(70,L*.12));const off=Math.max(12,o.rangeOffset??defaultOff);const shoulder=Math.max(24,Math.min(48,L*.08));return {a,b,L,ux,uy,nx,ny,off,shoulder}}
 function rangePoints(o){const f=rangeFrame(o);return [f.a,{x:f.a.x+f.ux*f.shoulder+f.nx*f.off,y:f.a.y+f.uy*f.shoulder+f.ny*f.off},{x:f.b.x-f.ux*f.shoulder+f.nx*f.off,y:f.b.y-f.uy*f.shoulder+f.ny*f.off},f.b]}
-function objBase(kind){let s=currentStyle();return {id:uid(),kind,...s,height_mm:null,product:'',note:'',mode};}
-function addObj(o){pushHistory();objects.push(o);selectedId=o.id;render();syncInspector();}
+function objBase(kind){let s=currentStyle();if(!['line','freehand','polyline','handwrite'].includes(kind))s.width=1;return {id:uid(),kind,...s,height_mm:null,product:'',note:'',mode};}
+function addObj(o){
+  if(activeExterior&&extCompatibleKind(EXTERIOR_PRESETS[activeExterior],o))applyExteriorPreset(o,activeExterior);
+  if(activeSurvey)applySurveyPreset(o,activeSurvey);
+  pushHistory();objects.push(o);selectedId=o.id;render();syncInspector();
+  if(o.exteriorType)setTimeout(()=>openExteriorInfo(o.id),0);
+}
 function getSel(){return objects.find(o=>o.id===selectedId)}
 function renderBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);if(bgImageData){ctx.drawImage(bgImageData,0,0,W,H)}}
 function mk(tag,attrs={}){const e=document.createElementNS(svgNS,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);return e}
-function startObjectDrag(o,ev,mode='move'){if(tool!=='select')return;ev.stopPropagation();selectedId=o.id;render();syncInspector();if(!editUnlocked){objectDrag=null;updateStatus('編集ロック中：選択はできます。移動・変形する場合は「編集ロック中」を押して解除してください。');return;}pushHistory();const p=screenToStage(ev.clientX,ev.clientY);objectDrag={id:o.id,mode,sx:p.x,sy:p.y,orig:JSON.parse(JSON.stringify(o))};}
+
+function pointNearSegment(p,a,b,tol){
+  if(!a||!b)return false;
+  const dx=b.x-a.x,dy=b.y-a.y,len2=dx*dx+dy*dy;
+  const t=len2?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/len2)):0;
+  return Math.hypot(p.x-a.x-dx*t,p.y-a.y-dy*t)<=tol;
+}
+function insidePolygon(p,pts){
+  if(!pts?.length)return false;
+  let yes=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const a=pts[i],b=pts[j];
+    if((a.y>p.y)!==(b.y>p.y)&&p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x)yes=!yes;
+  }
+  return yes;
+}
+function objectHitAt(o,p){
+  const tol=12/zoom;
+  if(['rect','polygon','circle'].includes(o.kind))return insidePolygon(p,rotatedShapePoints(o));
+  if(o.kind==='surveyPoint')return Math.hypot(p.x-o.x,p.y-o.y)<=tol;
+  if(['line','measure','dimension','gate'].includes(o.kind)&&o.a&&o.b)return pointNearSegment(p,o.a,o.b,Math.max(tol,(o.exteriorType==='block'||o.exteriorType==='gatepost')?blockVisualDepth(o)/2:0));
+  if(o.kind==='range')return rangePoints(o).slice(1).some((b,i)=>pointNearSegment(p,rangePoints(o)[i],b,tol));
+  if(o.points?.length>1)return o.points.slice(1).some((b,i)=>pointNearSegment(p,o.points[i],b,Math.max(tol,(o.exteriorType==='block'||o.exteriorType==='gatepost')?blockVisualDepth(o)/2:0)));
+  if(o.kind==='image'||o.kind==='mask'){return p.x>=o.x&&p.x<=o.x+o.w&&p.y>=o.y&&p.y<=o.y+o.h}
+  if(o.kind==='elevation')return Math.hypot(p.x-o.x,p.y-o.y)<=(o.radius||20)+tol;
+  const b=bounds(o);
+  return !!b&&p.x>=b.x-tol&&p.x<=b.x+b.w+tol&&p.y>=b.y-tol&&p.y<=b.y+b.h+tol;
+}
+function chooseSelectionAt(e){
+  if(tool!=='select'||placingExteriorAnnotationId||calibrating)return;
+  // Let existing edit handles keep their own resize/move behavior.
+  if(editUnlocked&&e.target.closest?.('.shapeHandle,.imageHandle,.rotateHandle'))return;
+  const item=e.target.closest?.('[data-id]');
+  const direct=objects.find(x=>x.id===item?.dataset.id);
+  const p=screenToStage(e.clientX,e.clientY);
+  const selected=direct||[...objects].reverse().find(o=>objectHitAt(o,p));
+  if(!selected)return;
+  if(editUnlocked&&direct)return; // original drag/annotation handler
+  e.preventDefault();e.stopPropagation();
+  selectedId=selected.id;
+  render();syncInspector();
+  updateStatus('図形を選択しました。削除する場合は「選択した記載を削除」を押してください。');
+}
+function startObjectDrag(o,ev,mode='move'){if(tool!=='select')return;ev.stopPropagation();selectedId=o.id;render();syncInspector();if(!editUnlocked){objectDrag=null;updateStatus(mode==='annotation'?'引出し注記を移動するには編集ロックを解除してください。':(o.exteriorType==='block'?'CBを選択しました。削除する場合は「選択した記載を削除」またはDeleteキーを使えます。':'編集ロック中：選択はできます。移動・変形する場合は「編集ロック中」を押して解除してください。'));return;}pushHistory();const p=screenToStage(ev.clientX,ev.clientY);objectDrag={id:o.id,mode,sx:p.x,sy:p.y,orig:JSON.parse(JSON.stringify(o))};if(mode==='annotation')updateStatus('引出し注記をドラッグして移動しています。');}
 function translateObject(o,orig,dx,dy){
  if(orig.a&&orig.b){o.a={x:orig.a.x+dx,y:orig.a.y+dy};o.b={x:orig.b.x+dx,y:orig.b.y+dy}}
  if(orig.points){o.points=orig.points.map(p=>({x:p.x+dx,y:p.y+dy}))}
  if(orig.kind==='circle'){o.cx=orig.cx+dx;o.cy=orig.cy+dy}
  else if(orig.x!=null){o.x=orig.x+dx;o.y=orig.y+dy}
+ if(orig.annotation)o.annotation={x:orig.annotation.x+dx,y:orig.annotation.y+dy};
 }
 function applyMeta(el,o){el.dataset.id=o.id;el.style.pointerEvents='stroke';el.style.cursor=editUnlocked?'move':'pointer';el.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));}
 function render(){svg.innerHTML='';for(const o of objects){let el;
- if(o.kind==='measure'){
+ if(o.kind==='surveyPoint'){
+   const r=7/zoom;
+   const g=mk('g');
+   if(o.surveyType==='roadBoundaryPoint'){
+     const diamond=mk('polygon',{points:`${o.x},${o.y-r} ${o.x+r},${o.y} ${o.x},${o.y+r} ${o.x-r},${o.y}`,fill:'#fff',stroke:o.color||'#b54708','stroke-width':2/zoom});
+     const t=mk('text',{x:o.x+11/zoom,y:o.y-9/zoom,fill:o.color||'#b54708','font-size':12/zoom,'font-weight':'700'});t.textContent='道路境界';g.append(diamond,t);
+   }else{
+     const c=mk('circle',{cx:o.x,cy:o.y,r,fill:'#fff',stroke:o.color||'#111827','stroke-width':2/zoom});
+     const h=mk('line',{x1:o.x-r*.65,y1:o.y,x2:o.x+r*.65,y2:o.y,stroke:o.color||'#111827','stroke-width':1.5/zoom});
+     const v=mk('line',{x1:o.x,y1:o.y-r*.65,x2:o.x,y2:o.y+r*.65,stroke:o.color||'#111827','stroke-width':1.5/zoom});
+     g.append(c,h,v);
+   }
+   bindExtElement(g,o);svg.appendChild(g);
+ } else if(o.kind==='measure'){
    const dx=o.b.x-o.a.x,dy=o.b.y-o.a.y,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
    const measureColor='#b54708', tick=9;
-   el=mk('line',{x1:o.a.x,y1:o.a.y,x2:o.b.x,y2:o.b.y,stroke:measureColor,'stroke-width':2,'stroke-dasharray':'9 6','stroke-linecap':'round'});applyMeta(el,o);svg.appendChild(el);
-   const ta=mk('line',{x1:o.a.x-nx*tick,y1:o.a.y-ny*tick,x2:o.a.x+nx*tick,y2:o.a.y+ny*tick,stroke:measureColor,'stroke-width':2});
-   const tb=mk('line',{x1:o.b.x-nx*tick,y1:o.b.y-ny*tick,x2:o.b.x+nx*tick,y2:o.b.y+ny*tick,stroke:measureColor,'stroke-width':2});
+   el=mk('line',{x1:o.a.x,y1:o.a.y,x2:o.b.x,y2:o.b.y,stroke:measureColor,'stroke-width':1,'stroke-dasharray':'9 6','stroke-linecap':'round'});applyMeta(el,o);svg.appendChild(el);
+   const ta=mk('line',{x1:o.a.x-nx*tick,y1:o.a.y-ny*tick,x2:o.a.x+nx*tick,y2:o.a.y+ny*tick,stroke:measureColor,'stroke-width':1});
+   const tb=mk('line',{x1:o.b.x-nx*tick,y1:o.b.y-ny*tick,x2:o.b.x+nx*tick,y2:o.b.y+ny*tick,stroke:measureColor,'stroke-width':1});
    [ta,tb].forEach(x=>{x.dataset.id=o.id;x.style.pointerEvents='stroke';x.style.cursor=editUnlocked?'move':'pointer';x.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(x)});
    const mm=o.value_mm ?? mmDistance(o.a,o.b), label=mm?`${Math.round(mm)} mm`:'縮尺未設定';
    const mx=(o.a.x+o.b.x)/2+nx*18,my=(o.a.y+o.b.y)/2+ny*18;
    const g=mk('g',{});g.dataset.id=o.id;g.style.cursor=editUnlocked?'move':'pointer';g.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));
    const bg=mk('rect',{x:mx-label.length*4.8-7,y:my-15,width:label.length*9.6+14,height:22,rx:5,fill:'#fff','fill-opacity':.92,stroke:measureColor,'stroke-width':1});
    const t=mk('text',{x:mx,y:my+1,'text-anchor':'middle',fill:measureColor,'font-size':15,'font-weight':'700'});t.textContent=label;g.append(bg,t);svg.appendChild(g);
- } else if(o.kind==='line'||o.kind==='dimension'){el=mk('line',{x1:o.a.x,y1:o.a.y,x2:o.b.x,y2:o.b.y,stroke:o.color,'stroke-width':o.width,'stroke-linecap':'round'});applyMeta(el,o);svg.appendChild(el);
+ } else if(o.kind==='line'||o.kind==='dimension'){if((o.exteriorType==='block'||o.exteriorType==='gatepost')&&o.kind==='line'){renderBlockLine(o,[o.a,o.b])}else{el=mk('line',{x1:o.a.x,y1:o.a.y,x2:o.b.x,y2:o.b.y,stroke:o.color,'stroke-width':o.kind==='line'?o.width:1,'stroke-linecap':'round'});applyMeta(el,o);svg.appendChild(el);}
  } else if(o.kind==='leader'){
    const dir=(o.b.x>=o.a.x)?1:-1;
    const elbow={x:o.a.x+(o.b.x-o.a.x)*0.58,y:o.b.y};
@@ -387,25 +953,23 @@ function render(){svg.innerHTML='';for(const o of objects){let el;
    const dot=mk('circle',{cx:o.a.x,cy:o.a.y,r:Math.max(4,o.width*1.4),fill:o.color,stroke:'none'});
    [p1,p2,dot].forEach(x=>{x.dataset.id=o.id;x.style.pointerEvents='all';x.style.cursor=editUnlocked?'move':'pointer';x.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(x)});
    if(o.text){const t=mk('text',{x:(elbow.x+end.x)/2,y:end.y-10,'text-anchor':'middle',fill:o.color,'font-size':18,'font-weight':'600'});t.textContent=o.text;t.dataset.id=o.id;t.style.pointerEvents='all';t.style.cursor=editUnlocked?'move':'pointer';t.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(t)}
- } else if(o.kind==='rect'){const c=shapeCenter(o);el=mk('rect',{x:o.x,y:o.y,width:o.w,height:o.h,fill:o.fillColor||'#90caf9','fill-opacity':o.fillOpacity??.30,stroke:o.color,'stroke-width':o.width,transform:`rotate(${o.angle||0} ${c.x} ${c.y})`});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
- } else if(o.kind==='circle'){const c=shapeCenter(o);el=mk('ellipse',{cx:o.cx,cy:o.cy,rx:o.rx,ry:o.ry,fill:o.fillColor||'#90caf9','fill-opacity':o.fillOpacity??.30,stroke:o.color,'stroke-width':o.width,transform:`rotate(${o.angle||0} ${c.x} ${c.y})`});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
- } else if(o.kind==='polygon'){const c=shapeCenter(o);el=mk('polygon',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:o.fillColor||'#90caf9','fill-opacity':o.fillOpacity??.30,stroke:o.color,'stroke-width':o.width,'stroke-linejoin':'round',transform:`rotate(${o.angle||0} ${c.x} ${c.y})`});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
- } else if(o.kind==='freehand'){el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':o.width,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);svg.appendChild(el)
- } else if(o.kind==='handwrite'){el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':Math.min(o.width||2,3),'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);svg.appendChild(el)
- } else if(o.kind==='polyline'){el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':o.width,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
+ } else if(o.kind==='rect'){const c=shapeCenter(o);el=mk('rect',{x:o.x,y:o.y,width:o.w,height:o.h,fill:exteriorFill(o),'fill-opacity':o.exteriorType&&['concrete','gravel','lawn'].includes(o.exteriorType)?1:
+    (o.exteriorType&&['deck','tile'].includes(o.exteriorType)?1:(o.exteriorType==='roof'?Math.max(.27,o.fillOpacity??.27):(o.fillOpacity??.30))),stroke:o.exteriorType==='roof'?roofOutlineColor(o):o.color,'stroke-width':o.exteriorType==='roof'?3:1,transform:`rotate(${o.angle||0} ${c.x} ${c.y})`});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
+ } else if(o.kind==='circle'){const c=shapeCenter(o);el=mk('ellipse',{cx:o.cx,cy:o.cy,rx:o.rx,ry:o.ry,fill:exteriorFill(o),'fill-opacity':o.exteriorType&&['concrete','gravel','lawn'].includes(o.exteriorType)?1:
+    (o.exteriorType&&['deck','tile'].includes(o.exteriorType)?1:(o.fillOpacity??.30)),stroke:o.color,'stroke-width':1,transform:`rotate(${o.angle||0} ${c.x} ${c.y})`});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
+ } else if(o.kind==='polygon'){const c=shapeCenter(o);el=mk('polygon',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:exteriorFill(o),'fill-opacity':o.exteriorType&&['concrete','gravel','lawn'].includes(o.exteriorType)?1:
+    (o.exteriorType&&['deck','tile'].includes(o.exteriorType)?1:(o.fillOpacity??.30)),stroke:o.color,'stroke-width':1,'stroke-linejoin':'round',transform:`rotate(${o.angle||0} ${c.x} ${c.y})`});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)
+ } else if(o.kind==='freehand'){el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':o.width||3,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);svg.appendChild(el)
+ } else if(o.kind==='handwrite'){el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':o.width||3,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);svg.appendChild(el)
+ } else if(o.kind==='polyline'){if(o.exteriorType==='block'||o.exteriorType==='gatepost'){renderBlockLine(o,o.points)}else{el=mk('polyline',{points:o.points.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':o.width||3,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el)}
  } else if(o.kind==='range'){const rp=rangePoints(o);el=mk('polyline',{points:rp.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:o.color,'stroke-width':1,'stroke-linecap':'round','stroke-linejoin':'round'});applyMeta(el,o);el.style.pointerEvents='all';svg.appendChild(el);const sdot=mk('circle',{cx:o.a.x,cy:o.a.y,r:4,fill:o.color,stroke:'none'});const edot=mk('circle',{cx:o.b.x,cy:o.b.y,r:4,fill:o.color,stroke:'none'});[sdot,edot].forEach(x=>{x.dataset.id=o.id;x.style.pointerEvents='all';x.style.cursor=editUnlocked?'move':'pointer';x.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(x)})
  } else if(o.kind==='text'){
-   const fs=o.fontSize||20;
-   const lines=String(o.text||'').split(/\n/);
-   const maxChars=Math.max(1,...lines.map(s=>s.length));
-   const boxW=Math.max(30,maxChars*fs*0.62+16), boxH=Math.max(fs+10,lines.length*fs*1.25+10);
-   if(o.textBgEnabled){const bg=mk('rect',{x:o.x-8,y:o.y-fs-5,width:boxW,height:boxH,rx:4,ry:4,fill:o.textBgColor||'#ffffff'});bg.dataset.id=o.id;bg.style.pointerEvents='all';bg.style.cursor=editUnlocked?'move':'pointer';bg.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(bg)}
-   el=mk('text',{x:o.x,y:o.y,fill:o.color,'font-size':fs});
-   lines.forEach((line,i)=>{const sp=mk('tspan',{x:o.x,dy:i===0?0:fs*1.25});sp.textContent=line;el.appendChild(sp)});
-   el.style.pointerEvents='all';el.dataset.id=o.id;el.style.cursor=editUnlocked?'move':'pointer';el.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(el)
+   // 単独のテキストは最前面の注記レイヤーに描くため、ここでは描画しない。
  } else if(o.kind==='image'){const img=mk('image',{x:o.x,y:o.y,width:o.w,height:o.h,href:o.dataUrl,preserveAspectRatio:'xMidYMid meet'});img.dataset.id=o.id;img.style.pointerEvents='all';img.style.cursor=editUnlocked?'move':'pointer';img.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(img);
- } else if(o.kind==='elevation'){const r=o.radius||20;const g=mk('g');const c=mk('circle',{cx:o.x,cy:o.y,r,fill:'none',stroke:o.color,'stroke-width':o.width});const t=mk('text',{x:o.x,y:o.y+Math.max(4,r*.24),'text-anchor':'middle',fill:o.color,'font-size':Math.max(10,r*.65),'font-weight':'700'});t.textContent=o.text;g.append(c,t);g.dataset.id=o.id;g.style.pointerEvents='all';g.style.cursor=editUnlocked?'move':'pointer';g.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(g)
+ } else if(o.kind==='elevation'){const r=o.radius||20;const g=mk('g');const c=mk('circle',{cx:o.x,cy:o.y,r,fill:'none',stroke:o.color,'stroke-width':1});const t=mk('text',{x:o.x,y:o.y+Math.max(4,r*.24),'text-anchor':'middle',fill:o.color,'font-size':Math.max(10,r*.65),'font-weight':'700'});t.textContent=o.text;g.append(c,t);g.dataset.id=o.id;g.style.pointerEvents='all';g.style.cursor=editUnlocked?'move':'pointer';g.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(g)
  } else if(o.kind==='mask'){el=mk('rect',{x:o.x,y:o.y,width:o.w,height:o.h,fill:'#fff',stroke:'#d0d5dd','stroke-dasharray':'4 4'});el.dataset.id=o.id;el.style.pointerEvents='all';el.style.cursor=editUnlocked?'move':'pointer';el.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(el)}
+ renderExteriorDecoration(o);
+ drawExteriorLengthLabels(o);
  renderExistingDimensions(o);
  if(o.id===selectedId){const b=bounds(o);if(b){svg.appendChild(mk('rect',{x:b.x-5,y:b.y-5,width:b.w+10,height:b.h+10,fill:'none',stroke:'#7f56d9','stroke-width':2,'stroke-dasharray':'6 4',class:'guide'}));
    if(editUnlocked&&o.kind==='image'){const h=mk('rect',{x:b.x+b.w-7,y:b.y+b.h-7,width:14,height:14,class:'imageHandle'});h.style.pointerEvents='all';h.addEventListener('pointerdown',ev=>startObjectDrag(o,ev,'resizeImage'));svg.appendChild(h)}
@@ -420,6 +984,19 @@ function render(){svg.innerHTML='';for(const o of objects){let el;
    if(editUnlocked&&o.kind==='polyline'&&o.points){o.points.forEach((pt,i)=>{const vh=mk('circle',{cx:pt.x,cy:pt.y,r:8,fill:'#fff',stroke:'#7f56d9','stroke-width':2});vh.style.pointerEvents='all';vh.style.cursor='move';vh.addEventListener('pointerdown',ev=>startObjectDrag(o,ev,`polyVertex:${i}`));svg.appendChild(vh)})}
  }}
  }
+ // 注記は他の描画オブジェクト・寸法・ハッチより常に手前に描く。
+ for(const o of objects)renderExteriorAnnotation(o);
+ for(const o of objects)renderPlainTextAnnotation(o);
+ for(const o of objects)renderStairNumber(o);
+ // オレンジの移動ハンドルは注記のさらに手前。
+ const so=getSel();
+ if(tool==='select'&&editUnlocked&&so?.annotation){
+   const ah=mk('circle',{cx:so.annotation.x,cy:so.annotation.y,r:9/zoom,fill:'#fff7ed',stroke:'#f79009','stroke-width':2/zoom});
+   ah.style.pointerEvents='all';ah.style.cursor='move';
+   ah.addEventListener('pointerdown',ev=>startObjectDrag(so,ev,'annotation'));
+   svg.appendChild(ah);
+   addDimText(so.annotation.x+14/zoom,so.annotation.y-12/zoom,'注記移動','start');
+ }
   if(calibrating && calibPts.length){
     calibPts.forEach((p,i)=>{
       const c=mk('circle',{cx:p.x,cy:p.y,r:8/zoom,fill:i===0?'#12b76a':'#f79009',stroke:'#fff','stroke-width':2/zoom,class:'guide'});svg.appendChild(c);
@@ -432,14 +1009,64 @@ function rotatePoint(p,c,deg){const r=(deg||0)*Math.PI/180,cs=Math.cos(r),sn=Mat
 function shapeCenter(o){if(o.kind==='rect')return{x:o.x+o.w/2,y:o.y+o.h/2};if(o.kind==='circle')return{x:o.cx,y:o.cy};if(o.kind==='polygon'&&o.points?.length){const b=rawBoundsPoints(o.points);return{x:b.x+b.w/2,y:b.y+b.h/2}};return{x:0,y:0}}
 function rawBoundsPoints(pts){let xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);return{x:Math.min(...xs),y:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
 function rotatedShapePoints(o){const a=o.angle||0,c=shapeCenter(o);if(o.kind==='rect'){const pts=[{x:o.x,y:o.y},{x:o.x+o.w,y:o.y},{x:o.x+o.w,y:o.y+o.h},{x:o.x,y:o.y+o.h}];return pts.map(p=>rotatePoint(p,c,a))}if(o.kind==='polygon')return o.points.map(p=>rotatePoint(p,c,a));if(o.kind==='circle'){const pts=[];for(let i=0;i<36;i++){const t=i*Math.PI*2/36;const p={x:o.cx+o.rx*Math.cos(t),y:o.cy+o.ry*Math.sin(t)};pts.push(rotatePoint(p,c,a))}return pts}return[]}
-function bounds(o){if(o.kind==='range'&&o.a&&o.b){return rawBoundsPoints(rangePoints(o))}if(o.kind==='leader'&&o.a&&o.b){const dir=(o.b.x>=o.a.x)?1:-1;const elbowX=o.a.x+(o.b.x-o.a.x)*0.58;const minHorizontal=Math.max(220,Math.max(1,(o.text||'').length)*15+50);const endX=elbowX+dir*Math.max(Math.abs(o.b.x-elbowX),minHorizontal);const xs=[o.a.x,elbowX,endX],ys=[o.a.y,o.b.y];return{x:Math.min(...xs),y:Math.min(...ys)-24,w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)+24}}if(o.a&&o.b)return{x:Math.min(o.a.x,o.b.x),y:Math.min(o.a.y,o.b.y),w:Math.abs(o.a.x-o.b.x),h:Math.abs(o.a.y-o.b.y)};if(['rect','circle','polygon'].includes(o.kind)){const pts=rotatedShapePoints(o);if(pts.length)return rawBoundsPoints(pts)};if(o.points)return rawBoundsPoints(o.points);if(o.kind==='circle')return{x:o.cx-o.rx,y:o.cy-o.ry,w:o.rx*2,h:o.ry*2};if(o.kind==='rect'||o.kind==='mask'||o.kind==='image')return{x:o.x,y:o.y,w:o.w,h:o.h};if(o.kind==='elevation'){const r=o.radius||20;return{x:o.x-r,y:o.y-r,w:r*2,h:r*2}};if(o.x!=null)return{x:o.x-25,y:o.y-25,w:o.w||50,h:o.h||50};}
+function bounds(o){if(o.kind==='range'&&o.a&&o.b){return rawBoundsPoints(rangePoints(o))}if(o.kind==='leader'&&o.a&&o.b){const dir=(o.b.x>=o.a.x)?1:-1;const elbowX=o.a.x+(o.b.x-o.a.x)*0.58;const minHorizontal=Math.max(220,Math.max(1,(o.text||'').length)*15+50);const endX=elbowX+dir*Math.max(Math.abs(o.b.x-elbowX),minHorizontal);const xs=[o.a.x,elbowX,endX],ys=[o.a.y,o.b.y];return{x:Math.min(...xs),y:Math.min(...ys)-24,w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)+24}}if(o.a&&o.b)return{x:Math.min(o.a.x,o.b.x),y:Math.min(o.a.y,o.b.y),w:Math.abs(o.a.x-o.b.x),h:Math.abs(o.a.y-o.b.y)};if(['rect','circle','polygon'].includes(o.kind)){const pts=rotatedShapePoints(o);if(pts.length)return rawBoundsPoints(pts)};if(o.points)return rawBoundsPoints(o.points);if(o.kind==='circle')return{x:o.cx-o.rx,y:o.cy-o.ry,w:o.rx*2,h:o.ry*2};if(o.kind==='rect'||o.kind==='mask'||o.kind==='image')return{x:o.x,y:o.y,w:o.w,h:o.h};if(o.kind==='elevation'){const r=o.radius||20;return{x:o.x-r,y:o.y-r,w:r*2,h:r*2}};if(o.kind==='stairNumber'){const r=(o.fontSize||22)*.6;return{x:o.x-r,y:o.y-r,w:r*2,h:r*2}};if(o.x!=null)return{x:o.x-25,y:o.y-25,w:o.w||50,h:o.h||50};}
 function ensureScale(){if(!pxPerMm){pxPerMm=.15;$('#scaleInfo').value='現調作図倍率 1mm = 0.1500 px';}return pxPerMm}
-function syncInspector(){const o=getSel();const box=$('#geometryBox');if(!o){box?.classList.add('hidden');$('#rectDimControls')?.classList.add('hidden');$('#lineDimControls')?.classList.add('hidden');return;}$('#selType').value=o.type||'generic';$('#selStatus').value=o.status||'existing';$('#selHeight').value=o.height_mm??'';$('#selColor').value=o.color||'#1565c0';$('#selTextBgMode').value=o.textBgEnabled?'fill':'transparent';$('#selTextBgColor').value=o.textBgColor||'#ffffff';$('#selFillColor').value=o.fillColor||'#90caf9';$('#selProduct').value=o.product||'';$('#selNote').value=o.note||'';const editable=['line','measure','dimension','range','rect','circle','polygon'].includes(o.kind);box.classList.toggle('hidden',!editable);$('#rectDimControls')?.classList.toggle('hidden',!(editable&&o.kind==='rect'&&mode==='survey'));$('#lineDimControls')?.classList.toggle('hidden',!(editable&&o.kind==='line'&&mode==='survey'));if(!editable)return;const s=ensureScale();let w=0,h=0,ang=o.angle||0;if(['line','measure','dimension','range'].includes(o.kind)){w=o.value_mm||dist(o.a,o.b)/s;h=0;ang=Math.atan2(o.b.y-o.a.y,o.b.x-o.a.x)*180/Math.PI;$('#geoWidthLabel').textContent='長さ mm';$('#geoHeightRow').classList.add('hidden');$('#geometryHint').textContent='端点をドラッグするか、長さ・角度を数値で変更できます。'}else{const rb=o.kind==='rect'?{w:o.w,h:o.h}:o.kind==='circle'?{w:o.rx*2,h:o.ry*2}:rawBoundsPoints(o.points);w=(o.kind==='rect'&&o.width_mm>0)?o.width_mm:rb.w/s;h=(o.kind==='rect'&&o.depth_mm>0)?o.depth_mm:rb.h/s;$('#geoWidthLabel').textContent='幅 mm';$('#geoHeightRow').classList.remove('hidden');$('#geometryHint').textContent='図形の全体寸法と回転角を数値で変更できます。'}$('#geoWidth').value=w?Math.round(w):'';$('#geoHeight').value=h?Math.round(h):'';$('#geoAngle').value=(Math.round(ang*10)/10).toString();}
+function exteriorIsLengthTool(k){return k==='block'||k==='fence'||k==='gatepost'}
+function exteriorLengthInput(){
+  const v=$('#extSegmentLength')?.value?.trim()||'';
+  if(!v)return null;
+  const mm=Number(v);
+  return Number.isFinite(mm)&&mm>0?mm:null;
+}
+function exteriorConstrainLength(a,b,mm){
+  if(!(mm>0))return {...b};
+  const sc=ensureScale(), dx=b.x-a.x,dy=b.y-a.y;
+  const len=Math.hypot(dx,dy);
+  // Direction still comes from the cursor or Apple Pencil.
+  const ux=len>0.001?dx/len:1,uy=len>0.001?dy/len:0;
+  return {x:a.x+ux*mm*sc,y:a.y+uy*mm*sc};
+}
+function exteriorObjLengths(o){
+  if(o.kind==='line')return o.a&&o.b?[dist(o.a,o.b)]:[];
+  if(o.kind==='polyline')return (o.points||[]).slice(1).map((pt,i)=>dist(o.points[i],pt));
+  return [];
+}
+function syncExteriorLengthEditor(o){
+  const box=$('#exteriorLengthEditor'),container=$('#exteriorLengthRows');
+  const visible=!!o&&exteriorIsLengthTool(o.exteriorType)&&['line','polyline'].includes(o.kind);
+  box?.classList.toggle('hidden',!visible);
+  if(!visible||!container)return;
+  const lens=exteriorObjLengths(o),sc=pxPerMm;
+  container.replaceChildren();
+  lens.forEach((length,i)=>{
+    const row=document.createElement('div');row.className='row';
+    const lab=document.createElement('label');lab.textContent=o.kind==='line'?'全長':`区間${i+1}`;
+    const inp=document.createElement('input');inp.type='number';inp.inputMode='decimal';inp.min='1';inp.step='1';inp.dataset.segmentIndex=String(i);
+    inp.value=sc?String(Math.round(length/sc)):(o.kind==='line'&&o.value_mm?String(Math.round(o.value_mm)):'');
+    inp.placeholder=sc?'例：2000':'縮尺校正後に編集';
+    row.append(lab,inp);container.appendChild(row);
+  });
+  const hint=document.createElement('div');hint.className='hint';hint.textContent=pxPerMm?'全区間を一括更新できます。':'縮尺未設定：2点で縮尺校正後の編集を推奨します。未設定のまま入力すると現調倍率で作図します。';container.appendChild(hint);
+}
+function drawExteriorLengthLabels(o){
+  // CB・フェンス・門柱は、図面上に自動寸法を出さない。
+  // 必要な寸法は定規やテキストで明示的に記載する運用とする。
+  return;
+}
+function syncInspector(){const o=getSel();syncExteriorLengthEditor(o);const box=$('#geometryBox');$('#editExteriorInfo')?.classList.toggle('hidden',!o?.exteriorType);
+  const annotationActions=$('#extAnnotationActions');
+  annotationActions?.classList.toggle('hidden',!o?.exteriorType);
+  const removeAnnotation=$('#removeExteriorAnnotation');
+  if(removeAnnotation)removeAnnotation.disabled=!o?.annotation;
+  const placeAnnotation=$('#placeExteriorAnnotation');
+  if(placeAnnotation)placeAnnotation.textContent=o?.annotation?'注釈を移動配置':'注釈を再配置';if(!o){box?.classList.add('hidden');$('#rectDimControls')?.classList.add('hidden');$('#lineDimControls')?.classList.add('hidden');return;}$('#selType').value=o.type||'generic';$('#selStatus').value=o.status||'existing';$('#selHeight').value=o.height_mm??'';$('#selColor').value=o.color||'#1565c0';$('#selTextBgMode').value=o.textBgEnabled?'fill':'transparent';$('#selTextBgColor').value=o.textBgColor||'#ffffff';$('#selFillColor').value=o.fillColor||'#90caf9';$('#selProduct').value=o.product||'';$('#selNote').value=o.note||'';const editable=['line','measure','dimension','range','rect','circle','polygon'].includes(o.kind);box.classList.toggle('hidden',!editable);$('#rectDimControls')?.classList.toggle('hidden',!(editable&&o.kind==='rect'&&mode==='survey'));$('#lineDimControls')?.classList.toggle('hidden',!(editable&&o.kind==='line'&&mode==='survey'));if(!editable)return;const s=ensureScale();let w=0,h=0,ang=o.angle||0;if(['line','measure','dimension','range'].includes(o.kind)){w=o.value_mm||dist(o.a,o.b)/s;h=0;ang=Math.atan2(o.b.y-o.a.y,o.b.x-o.a.x)*180/Math.PI;$('#geoWidthLabel').textContent='長さ mm';$('#geoHeightRow').classList.add('hidden');$('#geometryHint').textContent='端点をドラッグするか、長さ・角度を数値で変更できます。'}else{const rb=o.kind==='rect'?{w:o.w,h:o.h}:o.kind==='circle'?{w:o.rx*2,h:o.ry*2}:rawBoundsPoints(o.points);w=(o.kind==='rect'&&o.width_mm>0)?o.width_mm:rb.w/s;h=(o.kind==='rect'&&o.depth_mm>0)?o.depth_mm:rb.h/s;$('#geoWidthLabel').textContent='幅 mm';$('#geoHeightRow').classList.remove('hidden');$('#geometryHint').textContent='図形の全体寸法と回転角を数値で変更できます。'}$('#geoWidth').value=w?Math.round(w):'';$('#geoHeight').value=h?Math.round(h):'';$('#geoAngle').value=(Math.round(ang*10)/10).toString();}
 function updateStatus(extra=''){let m={new:'新築モード',survey:'リフォーム現調',instruction:'指示図'}[mode];let scale=pxPerMm?`縮尺校正済み 1mm=${pxPerMm.toFixed(3)}px`:'縮尺未設定';$('#statusbar').innerHTML=`<span class="badge ok">${m}</span><span class="badge ${pxPerMm?'ok':'warn'}">${scale}</span> ${extra}`;}
 function updatePolylineFinishUI(){
+  const show=(tool==='polyline'&&points.length>=2);
   const b=$('#finishPolylineMobile');
-  if(!b)return;
-  b.classList.toggle('hidden',!(tool==='polyline'&&points.length>=2));
+  if(b)b.classList.toggle('hidden',!show);
+  const t=$('#finishPolylineTablet');
+  if(t)t.classList.toggle('hidden',!show);
 }
 function finishPolyline(){
   if(tool!=='polyline'||points.length<2){
@@ -451,6 +1078,8 @@ function finishPolyline(){
   addObj(o);
   points=[];
   pathHover=null;
+  lastPolylineTapAt=0;
+  lastPolylineTapPoint=null;
   render();
   updatePolylineFinishUI();
   updateStatus('折れ線を作成しました。続けて折れ線を作図できます');
@@ -462,17 +1091,60 @@ function resetPointerState(){
   objectDrag=null;
   activePointers.clear();
 }
-function setTool(t){if(t!=='select'&&editUnlocked){editUnlocked=false;updateEditLockUI();}tool=t;exactLineStart=null;exactLineDirection=null;$$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$$('[data-mobile-tool]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTool===t));points=[];polygonHover=null;pathHover=null;resetPointerState();render();updatePolylineFinishUI();syncUnifiedNumericUI();updateStatus(`ツール: ${t==='measure'?'定規（寸法）＝測量補助線':t==='range'?'範囲指示線':t==='polyline'?'折れ線':t==='handwrite'?'手書き注記':t==='text'?'テキスト':t}`)}
+function setTool(t,preserveExterior=false,preserveSurvey=false){if(!preserveExterior){activeExterior=null;syncExteriorButtons();$('#extSegmentEntry')?.classList.add('hidden');}if(!preserveSurvey){activeSurvey=null;syncSurveyButtons();}if(t!=='select'&&editUnlocked){editUnlocked=false;updateEditLockUI();}tool=t;if(t==='stairNumber')nextStairNumber=1;lastPolylineTapAt=0;lastPolylineTapPoint=null;exactLineStart=null;exactLineDirection=null;$$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$$('[data-mobile-tool]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTool===t));points=[];polygonHover=null;pathHover=null;resetPointerState();render();updatePolylineFinishUI();syncUnifiedNumericUI();updateStatus(`ツール: ${t==='measure'?'定規（寸法）＝測量補助線':t==='range'?'範囲指示線':t==='polyline'?'折れ線':t==='handwrite'?'手書き注記':t==='text'?'テキスト':t==='stairNumber'?'階段段数：タップするごとに①②③…を配置':t}`)}
 
-$('#modeGroup').addEventListener('click',e=>{let b=e.target.closest('button[data-mode]');if(!b)return;mode=b.dataset.mode;$$('#modeGroup button').forEach(x=>x.classList.toggle('active',x===b));updateStatus()});
+$('#modeGroup').addEventListener('click',e=>{let b=e.target.closest('button[data-mode]');if(!b)return;setModeUi(b.dataset.mode);updateStatus()});
 $('#showExistingDims')?.addEventListener('change',()=>render());
 $('#toolGrid').addEventListener('click',e=>{let b=e.target.closest('button[data-tool]');if(b)setTool(b.dataset.tool)});$('#mobileDock').addEventListener('click',e=>{let b=e.target.closest('button[data-mobile-tool]');if(b)setTool(b.dataset.mobileTool)});
+$('#exteriorToolGrid')?.addEventListener('click',e=>{const b=e.target.closest('button[data-ext]');if(b)setExteriorTool(b.dataset.ext)});
+$('#mobileExteriorToolGrid')?.addEventListener('click',e=>{const b=e.target.closest('button[data-ext]');if(b)setExteriorTool(b.dataset.ext)});
+$('#extAreaShape')?.addEventListener('change',()=>{if(activeExterior&&EXTERIOR_PRESETS[activeExterior]?.base==='area')setExteriorTool(activeExterior)});
+$('#extClearSegmentLength')?.addEventListener('click',()=>{$('#extSegmentLength').value='';updateStatus('幅寸法の指定を解除しました。自由に描画できます。')});
+$('#extLineShape')?.addEventListener('change',()=>{if(activeExterior&&EXTERIOR_PRESETS[activeExterior]?.base==='line')setExteriorTool(activeExterior)});
+$('#mobileExteriorBtn')?.addEventListener('click',e=>{e.stopPropagation();$('#extMobilePanel')?.classList.toggle('open')});
+$('#closeExtMobile')?.addEventListener('click',()=>$('#extMobilePanel')?.classList.remove('open'));
+$('#surveyToolGrid')?.addEventListener('click',e=>{const b=e.target.closest('button[data-survey-tool]');if(b)setSurveyTool(b.dataset.surveyTool)});
+$('#mobileSurveyToolGrid')?.addEventListener('click',e=>{const b=e.target.closest('button[data-survey-tool]');if(b)setSurveyTool(b.dataset.surveyTool)});
+$('#mobileSurveyBtn')?.addEventListener('click',e=>{e.stopPropagation();const p=$('#surveyMobilePanel');p.style.display=p.style.display==='block'?'none':'block'});
+$('#closeSurveyMobile')?.addEventListener('click',()=>{$('#surveyMobilePanel').style.display='none'});
+$('#toggleSurveyPanel')?.addEventListener('click',e=>{e.stopPropagation();setTabletPanel('left');setTimeout(()=>$('#surveyToolsSection')?.scrollIntoView({block:'start'}),80)});
+
+
 $('#finishPolylineMobile')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();finishPolyline();});
+$('#finishPolylineTablet')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();finishPolyline();});
+
+
+// 引出し注記の配置待ち中は、既存図形の選択/ドラッグより先に処理する。
+// iPadでタイル等の図形上をタップしても確実に注記を置けるよう capture フェーズで受ける。
+workspace.addEventListener('pointerdown',e=>{
+  if(!placingExteriorAnnotationId)return;
+  const o=objects.find(x=>x.id===placingExteriorAnnotationId);
+  if(!o){placingExteriorAnnotationId=null;return}
+  e.preventDefault();
+  e.stopPropagation();
+  const p=screenToStage(e.clientX,e.clientY);
+  pushHistory();
+  o.annotation={x:p.x,y:p.y};
+  selectedId=o.id;
+  placingExteriorAnnotationId=null;
+  workspace.style.cursor='';
+  points=[];polygonHover=null;pathHover=null;resetPointerState();
+  render();syncInspector();
+  updateStatus(`${EXTERIOR_PRESETS[o.exteriorType]?.label||'外構'}の引出し注記を配置しました。続けて作図できます。`);
+},{capture:true});
+
+// 選択はパン・ズームや通常の作図より先に確定する。特にiPadの指タップ対策。
+workspace.addEventListener('pointerdown',chooseSelectionAt,{capture:true});
 
 workspace.addEventListener('pointerdown',e=>{
  workspace.setPointerCapture?.(e.pointerId);activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType});
  if(activePointers.size===2){const arr=[...activePointers.values()];pinchStart={d:Math.hypot(arr[1].x-arr[0].x,arr[1].y-arr[0].y),zoom,mid:{x:(arr[0].x+arr[1].x)/2,y:(arr[0].y+arr[1].y)/2},panX,panY};return}
  const p=screenToStage(e.clientX,e.clientY);
+ if(tool==='surveyPoint'&&activeSurvey&&['boundaryPoint','roadBoundaryPoint'].includes(activeSurvey)){
+   addObj(surveyPointObject(p,activeSurvey));
+   updateStatus(`${SURVEY_PRESETS[activeSurvey].label}を配置しました。続けて配置できます。`);
+   return
+ }
  if(calibrating){
    calibPts.push(p);
    render();
@@ -480,7 +1152,7 @@ workspace.addEventListener('pointerdown',e=>{
    if(calibPts.length===2){openCalibrationInput()}
    return
  }
- if((e.pointerType==='touch' && tool!=='text' && tool!=='elevation') || e.button===1){panStart={x:e.clientX,y:e.clientY,panX,panY};return}
+ if((e.pointerType==='touch' && tool!=='text' && tool!=='elevation' && tool!=='stairNumber') || e.button===1){panStart={x:e.clientX,y:e.clientY,panX,panY};return}
  if(tool==='exactLine'){
    if(!exactLineStart){exactLineStart=p;render();updateStatus('現況線: 始点を指定しました。線を伸ばす方向をクリックしてください');return}
    exactLineDirection=p;openExactLineInput();return
@@ -506,13 +1178,29 @@ workspace.addEventListener('pointerdown',e=>{
    points.push(p);polygonHover=p;renderPolygonPreview();return
  }
  if(tool==='polyline'){
-   points.push(p);
-   pathHover=p;
+   const now=performance.now();
+   const isSecondTap=lastPolylineTapPoint && (now-lastPolylineTapAt)<=420 && dist(p,lastPolylineTapPoint)<=22/zoom;
+   if(isSecondTap && points.length>=2){
+     // 2回目のタップ/クリックは新しい頂点として追加せず、その場で確定する。
+     lastPolylineTapAt=0;lastPolylineTapPoint=null;
+     finishPolyline();
+     return
+   }
+   let nextPoint=p;
+   if(points.length>=1&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){
+     nextPoint=exteriorConstrainLength(points[points.length-1],p,exteriorLengthInput());
+     $('#extSegmentLength').value=''; // independently editable next segment
+   }
+   points.push(nextPoint);
+   pathHover=nextPoint;
+   lastPolylineTapAt=now;
+   lastPolylineTapPoint={...p};
    renderPolylinePreview();
    updatePolylineFinishUI();
-   updateStatus(points.length===1?'折れ線: 始点を指定しました。次の頂点をタップしてください':'折れ線: 頂点を追加しました。iPadは「✓ 完了」、PCは終点でダブルクリックして確定できます');
+   updateStatus(points.length===1?'折れ線: 始点を指定しました。次の頂点をタップしてください':'折れ線: 頂点を追加しました。終点をダブルクリック/ダブルタップ、または「✓ 完了」で確定できます');
    return
  }
+ if(tool==='stairNumber'){const o=objBase('stairNumber');o.x=p.x;o.y=p.y;o.step=nextStairNumber++;o.fontSize=22;o.color='#111827';addObj(o);updateStatus(`階段段数：${stairCircledNumber(o.step)} を配置しました。続けて次の番号を配置できます。`);return}
  if(tool==='text'){openTextInput(p);return}
  if(tool==='elevation'){openElevationInput(p);return}
  if(tool==='mask'){drawing={kind:'mask',x:p.x,y:p.y,w:1,h:1,start:p};return}
@@ -520,6 +1208,7 @@ workspace.addEventListener('pointerdown',e=>{
 workspace.addEventListener('pointermove',e=>{
  if(objectDrag){const o=objects.find(x=>x.id===objectDrag.id);if(o){const p=screenToStage(e.clientX,e.clientY),dx=p.x-objectDrag.sx,dy=p.y-objectDrag.sy,orig=objectDrag.orig;
    if(objectDrag.mode==='move'){translateObject(o,orig,dx,dy)}
+   else if(objectDrag.mode==='annotation'){if(orig.annotation)o.annotation={x:orig.annotation.x+dx,y:orig.annotation.y+dy}}
    else if(objectDrag.mode==='resizeImage'){const nw=Math.max(40,(orig.w||40)+dx);o.w=nw;o.h=nw/((orig.w||1)/(orig.h||1))}
    else if(objectDrag.mode==='resizeShape'){
      const ob=bounds(orig); if(ob){
@@ -547,30 +1236,41 @@ workspace.addEventListener('pointermove',e=>{
  if(activePointers.size===2&&pinchStart){const arr=[...activePointers.values()];const d=Math.hypot(arr[1].x-arr[0].x,arr[1].y-arr[0].y);zoom=Math.max(.1,Math.min(5,pinchStart.zoom*d/pinchStart.d));applyTransform();return}
  if(panStart){panX=panStart.panX+(e.clientX-panStart.x);panY=panStart.panY+(e.clientY-panStart.y);applyTransform();return}
  const hoverP=screenToStage(e.clientX,e.clientY);if(tool==='polygon'&&points.length&&!drawing){polygonHover=hoverP;renderPolygonPreview();return}
- if(tool==='polyline'&&points.length&&!drawing){pathHover=hoverP;renderPolylinePreview();return}
+ if(tool==='polyline'&&points.length&&!drawing){pathHover=exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()?exteriorConstrainLength(points[points.length-1],hoverP,exteriorLengthInput()):hoverP;renderPolylinePreview();return}
  if(!drawing)return;const p=hoverP;
- if(drawing.b)drawing.b=p;else if(drawing.kind==='freehand'||drawing.kind==='handwrite')drawing.points.push(p);else if(drawing.kind==='mask'||drawing.kind==='rect'){drawing.x=Math.min(drawing.start.x,p.x);drawing.y=Math.min(drawing.start.y,p.y);drawing.w=Math.abs(p.x-drawing.start.x);drawing.h=Math.abs(p.y-drawing.start.y)}else if(drawing.kind==='circle'){drawing.cx=(drawing.start.x+p.x)/2;drawing.cy=(drawing.start.y+p.y)/2;drawing.rx=Math.abs(p.x-drawing.start.x)/2;drawing.ry=Math.abs(p.y-drawing.start.y)/2}
+ if(drawing.b)drawing.b=p;else if(drawing.kind==='freehand'||drawing.kind==='handwrite')drawing.points.push(p);else if(drawing.kind==='mask'||drawing.kind==='rect'){drawing.x=Math.min(drawing.start.x,p.x);drawing.y=Math.min(drawing.start.y,p.y);drawing.w=Math.abs(p.x-drawing.start.x);drawing.h=Math.abs(p.y-drawing.start.y)}else if(drawing.kind==='circle'){drawing.cx=(drawing.start.x+p.x)/2;drawing.cy=(drawing.start.y+p.y)/2;if(activeExterior==='planting'){const r=Math.max(Math.abs(p.x-drawing.start.x),Math.abs(p.y-drawing.start.y))/2;drawing.rx=r;drawing.ry=r}else{drawing.rx=Math.abs(p.x-drawing.start.x)/2;drawing.ry=Math.abs(p.y-drawing.start.y)/2}}
  renderPreview();
 });
 function finalizeTwoPointDrawing(){
  if(!drawing||!drawing.a||!drawing.b)return;
  const kind=drawing.kind;
- let o=objBase(kind);o.a={...drawing.a};o.b={...drawing.b};
+  let o=objBase(kind);o.a={...drawing.a};o.b={...drawing.b};
+  if(kind==='line'&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){o.b=exteriorConstrainLength(o.a,o.b,exteriorLengthInput());o.value_mm=exteriorLengthInput();}
  if(kind==='leader'){o.width=1;o.text=prompt('引出線の先に記載するテキストを入力してください','フェンス H1800')||''}
  if(kind==='range'){o.width=1}
  if(kind==='measure'&&pxPerMm)o.value_mm=dist(o.a,o.b)/pxPerMm;
  drawing=null;addObj(o);resetPointerState();
  updateStatus(`${kind==='measure'?'定規（寸法）':kind==='leader'?'引出線':kind==='range'?'範囲指示線':'直線'}を作成しました。続けて同じツールで作図できます`);
 }
-function renderPreview(){render();if(!drawing)return;let o={...objBase(drawing.kind),...drawing,id:'preview',color:$('#colorPicker').value,fillColor:$('#fillColorPicker').value,fillOpacity:.30,width:+$('#strokeWidth').value};if(['leader','range'].includes(o.kind))o.width=1;objects.push(o);render();objects.pop();if(['rect','circle'].includes(o.kind))renderShapeDimensions(o);}
-function renderPolygonPreview(){render();if(!points.length)return;const previewPts=polygonHover?[...points,polygonHover]:[...points];const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:$('#colorPicker').value,'stroke-width':+$('#strokeWidth').value||4,'stroke-dasharray':'7 5','stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);renderShapeDimensions({kind:'polygon',points:previewPts,closed:false});const first=points[0];svg.appendChild(mk('circle',{cx:first.x,cy:first.y,r:9/zoom,fill:'rgba(127,86,217,.15)',stroke:'#7f56d9','stroke-width':2/zoom,class:'guide'}));if(points.length>=2){const last=polygonHover||points[points.length-1];const close=mk('line',{x1:last.x,y1:last.y,x2:first.x,y2:first.y,stroke:'#98a2b3','stroke-width':1.5,'stroke-dasharray':'4 4',class:'guide'});svg.appendChild(close);addDimText(first.x,first.y-14/zoom,'始点をタップで確定')}}
-function renderPolylinePreview(){render();if(!points.length)return;const previewPts=pathHover?[...points,pathHover]:[...points];const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:$('#colorPicker').value,'stroke-width':+$('#strokeWidth').value||4,'stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);for(let i=0;i<previewPts.length-1;i++)addEdgeDim(previewPts[i],previewPts[i+1],-12/zoom);previewPts.forEach((pt,i)=>{svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:(i===0?5:4)/zoom,fill:'#fff',stroke:$('#colorPicker').value,'stroke-width':2/zoom,class:'guide'}))});const last=previewPts[previewPts.length-1];addDimText(last.x,last.y-14/zoom,'iPad: ✓ 完了 / PC: ダブルクリック','start')}
+function renderPreview(){
+  render();
+  if(!drawing)return;
+  const o={...objBase(drawing.kind),...drawing,id:'preview',
+    color:$('#colorPicker').value,fillColor:$('#fillColorPicker').value,
+    fillOpacity:.30,width:['line','freehand','polyline','handwrite'].includes(drawing.kind)?(+$('#strokeWidth').value||3):1};
+  if(activeExterior)applyExteriorPreset(o,activeExterior);
+  if(o.kind==='line'&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){
+    o.b=exteriorConstrainLength(o.a,o.b,exteriorLengthInput());
+  }
+  objects.push(o);render();objects.pop();
+  // 専用エクステリアのW/D等を描画中にも表示しない。
+  if(!activeExterior&&!activeSurvey&&['rect','circle'].includes(o.kind))renderShapeDimensions(o);
+}
+function renderPolygonPreview(){render();if(!points.length)return;const previewPts=polygonHover?[...points,polygonHover]:[...points];const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:activeExterior?EXTERIOR_PRESETS[activeExterior].color:$('#colorPicker').value,'stroke-width':1,'stroke-dasharray':'7 5','stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);if(!activeExterior&&!activeSurvey)renderShapeDimensions({kind:'polygon',points:previewPts,closed:false});const first=points[0];svg.appendChild(mk('circle',{cx:first.x,cy:first.y,r:9/zoom,fill:'rgba(127,86,217,.15)',stroke:'#7f56d9','stroke-width':2/zoom,class:'guide'}));if(points.length>=2){const last=polygonHover||points[points.length-1];const close=mk('line',{x1:last.x,y1:last.y,x2:first.x,y2:first.y,stroke:'#98a2b3','stroke-width':1.5,'stroke-dasharray':'4 4',class:'guide'});svg.appendChild(close);addDimText(first.x,first.y-14/zoom,'始点をタップで確定')}}
+function renderPolylinePreview(){render();if(!points.length)return;const previewPts=pathHover?[...points,pathHover]:[...points];const previewColor=activeExterior?EXTERIOR_PRESETS[activeExterior].color:$('#colorPicker').value;const previewWidth=activeExterior?EXTERIOR_PRESETS[activeExterior].width:(+$('#strokeWidth').value||3);const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:previewColor,'stroke-width':previewWidth,'stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);if(activeExterior==='fence')previewPts.forEach(pt=>svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:4.2,fill:previewColor,class:'guide'})));if(!activeExterior&&!activeSurvey)for(let i=0;i<previewPts.length-1;i++)addEdgeDim(previewPts[i],previewPts[i+1],-12/zoom);previewPts.forEach((pt,i)=>{svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:(i===0?5:4)/zoom,fill:'#fff',stroke:$('#colorPicker').value,'stroke-width':2/zoom,class:'guide'}))});const last=previewPts[previewPts.length-1];addDimText(last.x,last.y-14/zoom,'ダブルクリック/ダブルタップ または ✓ 完了','start')}
 workspace.addEventListener('dblclick',e=>{
  if(tool!=='polyline'||points.length<2)return;
  e.preventDefault();e.stopPropagation();
- const p=screenToStage(e.clientX,e.clientY);
- if(points.length>=2&&dist(points[points.length-1],points[points.length-2])<=6/zoom)points.pop();
- if(points.length&&dist(p,points[points.length-1])>6/zoom)points.push(p);
  finishPolyline();
 });
 workspace.addEventListener('pointerup',e=>{
@@ -586,7 +1286,7 @@ workspace.addEventListener('pointerup',e=>{
    if(drawing.awaitingSecond){return}
  }
  if(drawing.kind==='freehand'&&drawing.points.length>1){let o=objBase('freehand');o.points=drawing.points;addObj(o)}
- else if(drawing.kind==='handwrite'&&drawing.points.length>1){let o=objBase('handwrite');o.points=drawing.points;o.width=Math.min(+$('#strokeWidth').value||2,3);addObj(o)}
+ else if(drawing.kind==='handwrite'&&drawing.points.length>1){let o=objBase('handwrite');o.points=drawing.points;o.width=+$('#strokeWidth').value||3;addObj(o)}
  else if(drawing.kind==='mask'){let o=objBase('mask');Object.assign(o,{x:drawing.x,y:drawing.y,w:drawing.w,h:drawing.h});addObj(o)}
  else if(drawing.kind==='rect'){let o=objBase('rect');Object.assign(o,{x:drawing.x,y:drawing.y,w:drawing.w,h:drawing.h,angle:0});if(pxPerMm){o.width_mm=o.w/pxPerMm;o.depth_mm=o.h/pxPerMm}addObj(o)}
  else if(drawing.kind==='circle'){let o=objBase('circle');Object.assign(o,{cx:drawing.cx,cy:drawing.cy,rx:drawing.rx,ry:drawing.ry,angle:0});addObj(o)}
@@ -615,6 +1315,16 @@ function commitText(){
   addObj(o);closeTextInput();render();updateStatus('テキストを配置しました。続けてテキストを配置できます');
 }
 $('#textOk').onclick=commitText;$('#textCancel').onclick=closeTextInput;
+$('#useKeyboardInput')?.addEventListener('click',()=>{
+  const input=$('#textInput');
+  input?.setAttribute('lang','ja');
+  input?.focus({preventScroll:true});
+  try{
+    const len=input.value.length;
+    input.setSelectionRange(len,len);
+  }catch(_){}
+  updateStatus('日本語キーボード入力を選択しました');
+});
 $('#switchToHandwrite')?.addEventListener('click',()=>{closeTextInput();setTool('handwrite');updateStatus('手書き注記：Apple Pencilで日本語をそのまま書けます。ペンを離すと1ストローク確定します');});
 $('#textInput').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')commitText();if(e.key==='Escape')closeTextInput()});
 $('#textModal').addEventListener('pointerdown',e=>{if(e.target.id==='textModal')closeTextInput()});
@@ -715,6 +1425,28 @@ function createNumericForTool(p){
   else if(tool==='polygon'){o=objBase('polygon');o.angle=angle;o.points=[];const rx=w*sc/2,ry=h*sc/2;for(let i=0;i<sides;i++){const t=-Math.PI/2+i*Math.PI*2/sides;o.points.push({x:p.x+rx*Math.cos(t),y:p.y+ry*Math.sin(t)})}}
   addObj(o);selectedId=o.id;render();syncInspector();updateStatus('寸法・角度で作図しました。続けて基準点を指定できます。');return true;
 }
+$('#applyExteriorLengths').addEventListener('click',()=>{
+  const o=getSel();if(!o||!exteriorIsLengthTool(o.exteriorType)||!['line','polyline'].includes(o.kind))return;
+  const inputs=[...$$('#exteriorLengthRows input[data-segment-index]')];
+  const lengths=inputs.map(el=>Number(el.value));
+  if(lengths.length!==exteriorObjLengths(o).length||lengths.some(x=>!Number.isFinite(x)||x<=0)){
+    alert('各区間の幅寸法（mm）に正の数値を入力してください。');return;
+  }
+  const scale=ensureScale();pushHistory();
+  if(o.kind==='line'){
+    o.b=exteriorConstrainLength(o.a,o.b,lengths[0]);o.value_mm=lengths[0];
+  }else{
+    const orig=o.points.map(x=>({...x}));const newPts=[{...orig[0]}];
+    for(let i=0;i<lengths.length;i++){
+      // Preserve each original edge direction, keeping the joints connected.
+      const start=orig[i],end=orig[i+1];
+      const d={x:newPts[i].x+(end.x-start.x),y:newPts[i].y+(end.y-start.y)};
+      newPts.push(exteriorConstrainLength(newPts[i],d,lengths[i]));
+    }
+    o.points=newPts;
+  }
+  render();syncInspector();updateStatus('フェンス・CBの区間長さを変更しました。');
+});
 $('#applyGeometry').onclick=()=>{const o=getSel();if(!o)return;pushHistory();const sc=ensureScale(),w=Number($('#geoWidth').value),h=Number($('#geoHeight').value),ang=Number($('#geoAngle').value);if(!(w>0)||!Number.isFinite(ang)){alert('寸法と角度を入力してください。');return;}if(['line','measure','dimension','range'].includes(o.kind)){const rad=ang*Math.PI/180;o.b={x:o.a.x+w*sc*Math.cos(rad),y:o.a.y+w*sc*Math.sin(rad)};o.value_mm=w;}else if(o.kind==='rect'){if(!(h>0)){alert('幅と奥行を入力してください。');return;}const c=shapeCenter(o);o.w=w*sc;o.h=h*sc;o.width_mm=w;o.depth_mm=h;o.x=c.x-o.w/2;o.y=c.y-o.h/2;o.angle=ang;}else if(o.kind==='circle'){if(!(h>0)){alert('幅と高さを入力してください。');return;}o.rx=w*sc/2;o.ry=h*sc/2;o.angle=ang;}else if(o.kind==='polygon'){if(!(h>0)){alert('幅と高さを入力してください。');return;}const b=rawBoundsPoints(o.points),sx=b.w?(w*sc)/b.w:1,sy=b.h?(h*sc)/b.h:1,c={x:b.x+b.w/2,y:b.y+b.h/2};o.points=o.points.map(p=>({x:c.x+(p.x-c.x)*sx,y:c.y+(p.y-c.y)*sy}));o.angle=ang;}render();syncInspector();updateStatus('寸法・角度を更新しました')};
 ['geoWidth','geoHeight','geoAngle'].forEach(id=>$('#'+id)?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#applyGeometry').click()}}));
 $('#hideRectWidthDim')?.addEventListener('click',()=>{const o=getSel();if(!o||o.kind!=='rect')return;pushHistory();o.hiddenDims=o.hiddenDims||{};o.hiddenDims.width=true;render();syncInspector();updateStatus('四角形の幅寸法表示を削除しました')});
@@ -724,7 +1456,54 @@ $('#hideLineDim')?.addEventListener('click',()=>{const o=getSel();if(!o||o.kind!
 $('#restoreLineDim')?.addEventListener('click',()=>{const o=getSel();if(!o||o.kind!=='line')return;pushHistory();o.hiddenLineDim=false;render();syncInspector();updateStatus('直線の寸法を再表示しました')});
 $('#applyDisplay').onclick=()=>{const o=getSel();if(!o)return;pushHistory();o.color=$('#selColor').value;o.textBgEnabled=$('#selTextBgMode').value==='fill';o.textBgColor=$('#selTextBgColor').value;o.fillColor=$('#selFillColor').value;o.fillOpacity=.30;render();syncInspector();updateStatus('表示設定を更新しました')};
 $('#applyDirective').onclick=()=>{const o=getSel();if(!o)return;pushHistory();o.type=$('#selType').value;o.status=$('#selStatus').value;o.height_mm=$('#selHeight').value?+$('#selHeight').value:null;o.product=$('#selProduct').value;o.note=$('#selNote').value;render();syncInspector();updateStatus('指示内容（バックデータ）を更新しました')};
-$('#deleteSelected').onclick=deleteSel;$('#mobileDelete').onclick=deleteSel;function deleteSel(){if(!selectedId){updateStatus('削除する記載を「選択」でタップしてください');return;}pushHistory();objects=objects.filter(o=>o.id!==selectedId);selectedId=null;render();syncInspector();updateStatus('選択した記載を削除しました')}
+$('#editExteriorInfo')?.addEventListener('click',()=>{const o=getSel();if(o?.exteriorType)openExteriorInfo(o.id)});
+$('#removeExteriorAnnotation')?.addEventListener('click',()=>{
+  const o=getSel();if(!o?.exteriorType||!o.annotation)return;
+  pushHistory();
+  delete o.annotation;
+  if(placingExteriorAnnotationId===o.id){placingExteriorAnnotationId=null;workspace.style.cursor='';}
+  render();syncInspector();
+  updateStatus('引出し線と注釈を削除しました。図形本体と商品・高さなどの情報は残っています。');
+});
+$('#placeExteriorAnnotation')?.addEventListener('click',()=>{
+  const o=getSel();if(!o?.exteriorType)return;
+  // Existing annotation is preserved until the user chooses a new position.
+  placingExteriorAnnotationId=o.id;
+  workspace.style.cursor='crosshair';
+  updateStatus('引出し注記の位置を図面上でタップしてください。元の図形はそのままです。');
+});
+$('#extInfoSkip')?.addEventListener('click',()=>{closeExteriorInfo();updateStatus('外構情報は未入力のままです。続けて作図できます。')});
+$('#extInfoSaveOnly')?.addEventListener('click',()=>saveExteriorInfo(false));
+$('#extInfoPlace')?.addEventListener('click',()=>saveExteriorInfo(true));
+$('#exteriorInfoModal')?.addEventListener('pointerdown',e=>{if(e.target.id==='exteriorInfoModal')closeExteriorInfo()});
+
+$('#deleteSelected').onclick=deleteSel;$('#mobileDelete').onclick=deleteSel;
+function deleteSel(){
+  if(!selectedId){updateStatus('削除する記載を「選択」でタップしてください');return;}
+  const deleted=objects.find(o=>o.id===selectedId);
+  const deletedExterior=deleted?.exteriorType||null;
+  const deletedSurvey=deleted?.surveyType||null;
+  const deletedId=selectedId;
+  pushHistory();
+  objects=objects.filter(o=>o.id!==deletedId);
+  selectedId=null;
+  if(pendingExteriorInfoId===deletedId)closeExteriorInfo();
+  if(placingExteriorAnnotationId===deletedId){placingExteriorAnnotationId=null;workspace.style.cursor='';}
+  points=[];polygonHover=null;pathHover=null;resetPointerState();
+  render();syncInspector();
+  if(deletedExterior&&EXTERIOR_PRESETS[deletedExterior]){
+    setExteriorTool(deletedExterior);
+    updateStatus(`${EXTERIOR_PRESETS[deletedExterior].label}を削除しました。続けて同じ専用ツールで作図できます。`);
+    return;
+  }
+  if(deletedSurvey&&SURVEY_PRESETS[deletedSurvey]){
+    setSurveyTool(deletedSurvey);
+    updateStatus(`${SURVEY_PRESETS[deletedSurvey].label}を削除しました。続けて同じ現調ツールを使用できます。`);
+    return;
+  }
+  setTool('select');
+  updateStatus('選択した記載を削除しました');
+}
 $('#undoBtn')?.addEventListener('click',undo);updateUndoUI();
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();undo();return;}if(e.key==='Delete'||e.key==='Backspace'){if(document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')deleteSel()}if(e.key==='Escape'){drawing=null;points=[];setTool('select')}});
 
@@ -749,11 +1528,13 @@ function imageToDataUrl(img){
 function setModeUi(next){
   mode=next||'new';
   document.querySelectorAll('#modeGroup button').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  syncModeSpecificUi();
 }
+syncModeSpecificUi();
 $('#saveProject').onclick=()=>{
   const bgDataUrl=imageToDataUrl(bgImageData);
   const data={
-    format:'gardenplus-exterior-project',version:3,savedAt:new Date().toISOString(),
+    format:'gardenplus-exterior-project',version:5,savedAt:new Date().toISOString(),
     mode,width:W,height:H,pxPerMm,backgroundName,bgKind,backgroundDataUrl:bgDataUrl,
     objects,view:{zoom,panX,panY},
     drawStyle:{color:$('#colorPicker').value,fillColor:$('#fillColorPicker').value,strokeWidth:+$('#strokeWidth').value||4}
