@@ -74,12 +74,30 @@ h3{font-size:14px;margin:10px 0 8px}.section{border-bottom:1px solid #edf0f2;pad
 }
 
 .mobileDock{display:none}
+#tabletDrawActions{display:none;position:absolute;right:12px;bottom:58px;z-index:48;
+  flex-direction:column;align-items:stretch;gap:8px;min-width:168px;max-width:min(260px,48vw);
+  background:rgba(255,255,255,.97);border:1px solid #bdc8d4;border-radius:12px;
+  padding:10px;box-shadow:0 7px 22px rgba(17,24,39,.2)}
+#tabletDrawActions button{font-size:16px;font-weight:750;min-height:48px}
+#tabletQuickFinish{background:#111827;color:#fff;border-color:#111827}
+#tabletDrawActions .quickDimControls{display:grid;grid-template-columns:1fr;gap:7px}
+#tabletQuickLength{width:100%;min-height:44px;padding:7px 10px;font-size:18px;border:1px solid #cbd5e1;border-radius:8px}
+@media (hover:none), (pointer:coarse){#tabletDrawActions.visible{display:flex}}
+#tabletPanelDock,#mobileDock,#tabletDrawActions,#extMobilePanel,#surveyMobilePanel{touch-action:manipulation}
 svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif}
 
 .elevModal{position:fixed;inset:0;background:rgba(17,24,39,.35);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .elevModal.open{display:flex}
 .elevCard{width:min(360px,92vw);background:#fff;border-radius:14px;border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.18);padding:16px}
 .elevCard h3{margin:0 0 10px;font-size:16px}.elevCard input{width:100%;border:1px solid #cfd5dc;border-radius:9px;padding:10px;font-size:18px}.elevActions{display:flex;gap:8px;margin-top:12px}.elevActions button{flex:1}
+
+/* Multi-page PDF selection dialog */
+.pdfPageCard{width:min(760px,96vw);max-height:94vh;overflow:auto;background:#fff;border:1px solid #d6dce5;border-radius:13px;padding:17px;box-shadow:0 18px 60px rgba(15,23,42,.22)}
+.pdfPageNav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.pdfPageNav select{flex:1;min-width:90px;border:1px solid #cbd5e1;border-radius:7px;padding:9px;min-height:40px}
+.pdfPagePreview{display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid #d5dbe4;background:#eef1f5;padding:10px;height:min(57vh,520px);overflow:hidden}
+.pdfPagePreview canvas{max-width:100%;max-height:100%;width:auto;height:auto;background:white;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.pdfPageActions{display:flex;gap:8px;margin-top:12px}.pdfPageActions button{flex:1}.pdfPageActions #pdfPageConfirm{background:#111827;color:#fff;font-weight:700}
 </style>
 </head>
 <body>
@@ -127,8 +145,13 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
       <div class="row"><label>線系の形</label><select id="extLineShape"><option value="polyline">折れ線</option><option value="line">直線</option></select></div>
       <div id="extSegmentEntry" class="hidden" style="border-top:1px solid #e4e7ec;margin-top:9px;padding-top:8px">
         <div class="row"><label>幅寸法 mm</label><input id="extSegmentLength" type="number" inputmode="decimal" min="1" step="1" placeholder="空欄なら自由描画"></div>
-        <div class="hint">次の区間の長さを入力して方向を指定します。折れ線は区間ごとに変更できます。縮尺設定済みの場合はその縮尺を使用します。</div>
+        <button type="button" id="extApplySegmentLength" style="width:100%;font-weight:750;min-height:42px">寸法を反映</button>
+        <div class="hint">目安の方向に線を描いてから数値を入力し、「寸法を反映」を押します。iPadは作図画面にも反映ボタンがあります。縮尺設定済みの場合はその縮尺を使います。</div>
         <button type="button" id="extClearSegmentLength" style="width:100%;margin-top:6px">幅寸法指定を解除</button>
+      </div>
+      <div id="exteriorBlockDimChoice" class="hidden" style="margin-top:8px;border-top:1px solid #d0d5dd;padding-top:8px">
+        <div class="row"><label>確定後の寸法</label><select class="defaultGuideDimChoice"><option value="hide">図面に残さない</option><option value="show">図面に残す</option></select></div>
+        <div class="hint">作図中は長さをガイド表示します。確定後の表示は後から変更できます。</div>
       </div>
       <div class="hint">土間・砂利・芝生・デッキ・タイル/平板は四角形/多角形を切替。CB・フェンスは折れ線/直線を切替できます。</div>
     </div>
@@ -142,6 +165,10 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
       <button data-survey-tool="roadBoundaryPoint">道路境界ポイント</button>
       <button data-survey-tool="existingBlock">既存CB</button>
       <button data-survey-tool="existingFence">既存フェンス</button>
+    </div>
+    <div id="surveyDimChoice" style="margin-top:8px">
+      <div class="row"><label>確定後の寸法</label><select class="defaultGuideDimChoice"><option value="hide">図面に残さない</option><option value="show">図面に残す</option></select></div>
+      <div class="hint">作図中は寸法ガイドを表示します。確定後の表示は後から変更できます。</div>
     </div>
     <div class="hint" style="margin-top:8px">建物基礎は水平・垂直に補正し、各折れ点は直角（90°）。各辺寸法を自動表示。境界・道路境界はポイント記号で配置します。既存CB・フェンスは既存状態で記録します。</div>
   </div>
@@ -183,7 +210,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
   <div class="section" id="surveySection">
     <h3>リフォーム現調</h3>
     <div class="row"><label>現況寸法</label><label style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><input id="showExistingDims" type="checkbox" checked style="width:auto">表示</label></div>
-    <div class="hint">建物基礎・境界などの既存物は、その線・各辺の長さを自動表示します。CB・フェンスは自動寸法表示せず、必要時のみテキスト・定規で表記してください。折れ線は区間ごと、四角形は幅・奥行を表示します。</div>
+    <div class="hint">建物基礎とCBは、線を引く途中で区間長さをガイド表示します。完成後の寸法表記は図形ごとに選択できます。他の現況寸法は上の表示設定で切り替えます。</div>
   </div>
   <div class="section">
     <h3>縮尺校正</h3>
@@ -206,6 +233,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
   </div>
   <div id="surveyMobilePanel" style="display:none;position:absolute;left:8px;right:8px;top:56px;z-index:46;background:rgba(255,255,255,.98);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 12px 30px rgba(17,24,39,.18);max-height:70%;overflow:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>現調専用ツール</strong><button id="closeSurveyMobile" type="button">閉じる</button></div>
+    <div class="row" style="margin-bottom:8px"><label style="width:auto">基礎・CB確定後の寸法</label><select class="defaultGuideDimChoice"><option value="hide">残さない</option><option value="show">残す</option></select></div>
     <div class="extToolgrid" id="mobileSurveyToolGrid">
       <button data-survey-tool="foundation">建物基礎</button>
       <button data-survey-tool="boundaryPoint">境界ポイント</button>
@@ -216,12 +244,21 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
   </div>
   <div id="extMobilePanel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>エクステリア専用ツール</strong><button id="closeExtMobile" type="button">閉じる</button></div>
+    <div class="row" style="margin-bottom:8px"><label style="width:auto">CB確定後の寸法</label><select class="defaultGuideDimChoice"><option value="hide">残さない</option><option value="show">残す</option></select></div>
     <div class="extToolgrid" id="mobileExteriorToolGrid">
       <button data-ext="concrete">土間コン</button><button data-ext="block">CB</button><button data-ext="fence">フェンス</button>
       <button data-ext="gravel">砂利</button><button data-ext="lawn">芝生</button><button data-ext="gatepost">門柱</button>
       <button data-ext="gate">門扉</button><button data-ext="roof">カーポート/屋根</button><button data-ext="deck">ウッドデッキ</button>
       <button data-ext="tile">タイル/平板</button><button data-ext="planting">植栽</button><button data-ext="lighting">照明</button><button data-ext="stairNumber">階段段数</button>
     </div>
+  </div>
+  <div id="tabletDrawActions" aria-label="iPad作図確定操作">
+    <div id="tabletQuickDimSection" class="quickDimControls hidden">
+      <label for="tabletQuickLength" style="font-size:12px;font-weight:650">次の区間・選択区間の長さ（mm）</label>
+      <input id="tabletQuickLength" type="number" min="1" step="1" inputmode="decimal" placeholder="例：3000">
+      <button type="button" id="tabletApplyLength">寸法を反映</button>
+    </div>
+    <button type="button" id="tabletQuickFinish" class="hidden">✓ 折れ線を完了</button>
   </div>
   <div id="stage"><canvas id="bgCanvas"></canvas><svg id="drawSvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
   <div class="statusbar" id="statusbar"><span class="badge ok">新築モード</span> 図面を読み込むか、作図を開始してください。</div>
@@ -257,6 +294,11 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
           <button id="restoreLineDim" type="button">寸法を再表示</button>
         </div>
       </div>
+    </div>
+    <div id="guideDimensionEditor" class="hidden" style="padding:10px 0;border-top:1px solid #edf0f2;margin-top:10px">
+      <h3>図面上の寸法表示</h3>
+      <div class="hint">作図中のガイド寸法とは別に、完成した図面に残すかを指定します。</div>
+      <div class="row"><label>寸法表示</label><select id="guideDimensionVisibility"><option value="hide">表示しない</option><option value="show">表示する</option></select></div>
     </div>
     <div id="exteriorLengthEditor" class="hidden" style="padding:10px 0;border-top:1px solid #edf0f2;margin-top:10px">
       <h3>幅寸法・区間長さ（mm）</h3>
@@ -312,6 +354,23 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
   </div>
 </aside>
 </main>
+</div>
+<div class="elevModal" id="pdfPageModal" aria-hidden="true">
+  <div class="pdfPageCard" role="dialog" aria-modal="true" aria-labelledby="pdfPageTitle">
+    <h3 id="pdfPageTitle" style="font-size:17px;margin:0 0 6px">PDFの読み込みページを選択</h3>
+    <div class="hint" id="pdfPageFileName" style="overflow-wrap:anywhere"></div>
+    <div class="pdfPageNav">
+      <button id="pdfPagePrev" type="button">← 前のページ</button>
+      <select id="pdfPageSelect" aria-label="PDFページ"></select>
+      <button id="pdfPageNext" type="button">次のページ →</button>
+    </div>
+    <div class="pdfPagePreview"><canvas id="pdfPagePreviewCanvas"></canvas></div>
+    <div class="hint" id="pdfPagePreviewStatus" style="margin-top:6px">プレビューを表示しています</div>
+    <div class="pdfPageActions">
+      <button id="pdfPageCancel" type="button">キャンセル</button>
+      <button id="pdfPageConfirm" type="button">このページを読み込む</button>
+    </div>
+  </div>
 </div>
 <div class="elevModal" id="textModal" aria-hidden="true">
   <div class="elevCard" role="dialog" aria-modal="true" aria-labelledby="textTitle">
@@ -448,6 +507,7 @@ const SURVEY_PRESETS={
 };
 let pendingExteriorInfoId=null;
 let placingExteriorAnnotationId=null;
+let lastExteriorDrawId=null;
 let lastPolylineTapAt=0;
 let lastPolylineTapPoint=null;
 
@@ -479,10 +539,46 @@ function addDimText(x,y,text,anchor='middle'){const g=mk('g',{class:'guide'});g.
 function addEdgeDim(a,b,offset=0){const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;const nx=-dy/L,ny=dx/L;addDimText(mx+nx*offset,my+ny*offset-5,fmtLenPx(L))}
 function addMeasuredEdgeDim(a,b,mm,offset=-12/zoom){const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;addDimText(mx+nx*offset,my+ny*offset-5,fmtMm(mm))}
 function renderShapeDimensions(o){if(o.kind==='rect'){addDimText(o.x+o.w/2,o.y-10,`W ${fmtLenPx(o.w)}`);addDimText(o.x+o.w+10,o.y+o.h/2,`D ${fmtLenPx(o.h)}`,'start')}else if(o.kind==='circle'){addDimText(o.cx,o.cy-o.ry-10,`横 ${fmtLenPx(o.rx*2)} × 縦 ${fmtLenPx(o.ry*2)}`)}else if(o.kind==='polygon'&&o.points?.length>1){for(let i=0;i<o.points.length-1;i++)addEdgeDim(o.points[i],o.points[i+1],-10);if(o.closed&&o.points.length>2)addEdgeDim(o.points[o.points.length-1],o.points[0],-10)}}
+function isGuideDimensionObject(o){
+  if(!o)return false;
+  return o.surveyType==='foundation' || o.surveyType==='existingBlock' || o.exteriorType==='block';
+}
+function drawingNeedsDimensionGuide(){
+  return activeSurvey==='foundation'||activeSurvey==='existingBlock'||activeExterior==='block';
+}
+let defaultGuideDimensionsVisible=false;
+function renderGuideDimensionSegments(pts,{preview=false,overrideValue=null}={}){
+  if(!pts||pts.length<2)return;
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i];
+    if(!a||!b||dist(a,b)<1/zoom)continue;
+    const provisional=!pxPerMm;
+    // 未校正時は現調の仮倍率でガイド値を出す。正式寸法と誤認しないよう「仮」を明記。
+    const mm=(i===1 && pts.length===2 && overrideValue>0)?overrideValue:dist(a,b)/(pxPerMm||0.15);
+    const msg=(mm>0 && Number.isFinite(mm))?`${provisional?'仮 ':''}${Math.round(mm)} mm`:'寸法未設定';
+    const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;
+    const nx=-dy/L,ny=dx/L;
+    // The guide is distinguished from a deliberately placed dimension tool.
+    const offset=preview?-16/zoom:-13/zoom;
+    addDimText((a.x+b.x)/2+nx*offset,(a.y+b.y)/2+ny*offset-5,msg);
+  }
+}
+function drawSavedGuideDimensions(o){
+  if(!isGuideDimensionObject(o) || !o.showGuideDimensions)return;
+  const pts=o.kind==='line'?[o.a,o.b]:o.kind==='polyline'?o.points:null;
+  if(pts?.length>1)renderGuideDimensionSegments(pts,{overrideValue:o.kind==='line'?o.value_mm:null});
+}
+function syncGuideDimensionSetting(value){
+  defaultGuideDimensionsVisible=value==='show';
+  $$('.defaultGuideDimChoice').forEach(el=>{el.value=defaultGuideDimensionsVisible?'show':'hide'});
+}
+function refreshGuideDimensionControls(){
+  const visible=activeExterior==='block';
+  $('#exteriorBlockDimChoice')?.classList.toggle('hidden',!visible);
+}
 function renderExistingDimensions(o){
+  if(isGuideDimensionObject(o))return; // independently controlled by object property
   if(!$('#showExistingDims')?.checked || mode!=='survey')return;
-  // 外構専用図形はすべて寸法非表示。作図の概算値を設計寸法と誤認させない。
-  // 現調専用の既存CB/フェンスにも寸法は付けず、建物基礎の寸法は維持。
   if(o.exteriorType || ['existingBlock','existingFence'].includes(o.surveyType))return;
   if(o.kind==='line'&&o.a&&o.b){
     if(o.hiddenLineDim)return;
@@ -541,8 +637,10 @@ function setExteriorTool(key){
   $('#colorPicker').value=p.color;$('#fillColorPicker').value=p.fill;$('#strokeWidth').value=p.width;
   const t=exteriorToolKind(key);
   setTool(t,true);
+  refreshGuideDimensionControls();
   syncExteriorButtons();
   $('#extSegmentEntry')?.classList.toggle('hidden',!exteriorIsLengthTool(key));
+  updatePolylineFinishUI();syncQuickLength();
   $('#extMobilePanel')?.classList.remove('open');
   updateStatus(key==='stairNumber'
     ? '階段段数：位置をタップするたびに①②③…を配置します。背景・注釈なし。'
@@ -559,7 +657,7 @@ function setSurveyTool(key){
   let t=p.tool;
   if(key==='existingBlock'){activeExterior='block';t=$('#extLineShape')?.value||'polyline'}
   if(key==='existingFence'){activeExterior='fence';t=$('#extLineShape')?.value||'polyline'}
-  setTool(t,true,true);syncSurveyButtons();
+  setTool(t,true,true);syncSurveyButtons();updatePolylineFinishUI();
   $('#surveyMobilePanel').style.display='none';
   updateStatus(`${p.label}：${t==='surveyPoint'?'配置位置をタップしてください':'作図してください'}`);
 }
@@ -882,8 +980,10 @@ const defaultOff=Math.max(36,Math.min(70,L*.12));const off=Math.max(12,o.rangeOf
 function rangePoints(o){const f=rangeFrame(o);return [f.a,{x:f.a.x+f.ux*f.shoulder+f.nx*f.off,y:f.a.y+f.uy*f.shoulder+f.ny*f.off},{x:f.b.x-f.ux*f.shoulder+f.nx*f.off,y:f.b.y-f.uy*f.shoulder+f.ny*f.off},f.b]}
 function objBase(kind){let s=currentStyle();if(!['line','freehand','polyline','handwrite'].includes(kind))s.width=1;return {id:uid(),kind,...s,height_mm:null,product:'',note:'',mode};}
 function addObj(o){
+  if(exteriorIsLengthTool(activeExterior)&&o.kind==='line')lastExteriorDrawId=o.id;
   if(activeExterior&&extCompatibleKind(EXTERIOR_PRESETS[activeExterior],o))applyExteriorPreset(o,activeExterior);
   if(activeSurvey)applySurveyPreset(o,activeSurvey);
+  if(isGuideDimensionObject(o))o.showGuideDimensions=defaultGuideDimensionsVisible;
   pushHistory();objects.push(o);selectedId=o.id;render();syncInspector();
   if(o.exteriorType)setTimeout(()=>openExteriorInfo(o.id),0);
 }
@@ -919,6 +1019,7 @@ function objectHitAt(o,p){
   return !!b&&p.x>=b.x-tol&&p.x<=b.x+b.w+tol&&p.y>=b.y-tol&&p.y<=b.y+b.h+tol;
 }
 function chooseSelectionAt(e){
+  if(isDrawingUiEvent(e))return;
   if(tool!=='select'||placingExteriorAnnotationId||calibrating)return;
   // Let existing edit handles keep their own resize/move behavior.
   if(editUnlocked&&e.target.closest?.('.shapeHandle,.imageHandle,.rotateHandle'))return;
@@ -998,6 +1099,7 @@ function render(){svg.innerHTML='';for(const o of objects){let el;
  } else if(o.kind==='mask'){el=mk('rect',{x:o.x,y:o.y,width:o.w,height:o.h,fill:'#fff',stroke:'#d0d5dd','stroke-dasharray':'4 4'});el.dataset.id=o.id;el.style.pointerEvents='all';el.style.cursor=editUnlocked?'move':'pointer';el.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(el)}
  renderExteriorDecoration(o);
  drawExteriorLengthLabels(o);
+ drawSavedGuideDimensions(o);
  renderExistingDimensions(o);
  if(o.id===selectedId){const b=bounds(o);if(b){svg.appendChild(mk('rect',{x:b.x-5,y:b.y-5,width:b.w+10,height:b.h+10,fill:'none',stroke:'#7f56d9','stroke-width':2,'stroke-dasharray':'6 4',class:'guide'}));
    if(editUnlocked&&o.kind==='image'){const h=mk('rect',{x:b.x+b.w-7,y:b.y+b.h-7,width:14,height:14,class:'imageHandle'});h.style.pointerEvents='all';h.addEventListener('pointerdown',ev=>startObjectDrag(o,ev,'resizeImage'));svg.appendChild(h)}
@@ -1083,6 +1185,9 @@ function drawExteriorLengthLabels(o){
 }
 function syncInspector(){
   const o=getSel();
+  const guideEditor=$('#guideDimensionEditor');
+  guideEditor?.classList.toggle('hidden',!isGuideDimensionObject(o));
+  if(isGuideDimensionObject(o))$('#guideDimensionVisibility').value=o.showGuideDimensions?'show':'hide';
   $('#rangeDirectionEditRow')?.classList.toggle('hidden',o?.kind!=='range');
   if(o?.kind==='range')$('#rangeDirectionEdit').value=o.rangeDirection||'up';
   syncExteriorLengthEditor(o);const box=$('#geometryBox');$('#editExteriorInfo')?.classList.toggle('hidden',!o?.exteriorType);
@@ -1093,12 +1198,63 @@ function syncInspector(){
   const placeAnnotation=$('#placeExteriorAnnotation');
   if(placeAnnotation)placeAnnotation.textContent=o?.annotation?'注釈を移動配置':'注釈を再配置';if(!o){box?.classList.add('hidden');$('#rectDimControls')?.classList.add('hidden');$('#lineDimControls')?.classList.add('hidden');return;}$('#selType').value=o.type||'generic';$('#selStatus').value=o.status||'existing';$('#selHeight').value=o.height_mm??'';$('#selColor').value=o.color||'#1565c0';$('#selTextBgMode').value=o.textBgEnabled?'fill':'transparent';$('#selTextBgColor').value=o.textBgColor||'#ffffff';$('#selFillColor').value=o.fillColor||'#90caf9';$('#selProduct').value=o.product||'';$('#selNote').value=o.note||'';const editable=['line','measure','dimension','range','rect','circle','polygon'].includes(o.kind);box.classList.toggle('hidden',!editable);$('#rectDimControls')?.classList.toggle('hidden',!(editable&&o.kind==='rect'&&mode==='survey'));$('#lineDimControls')?.classList.toggle('hidden',!(editable&&o.kind==='line'&&mode==='survey'));if(!editable)return;const s=ensureScale();let w=0,h=0,ang=o.angle||0;if(['line','measure','dimension','range'].includes(o.kind)){w=o.value_mm||dist(o.a,o.b)/s;h=0;ang=Math.atan2(o.b.y-o.a.y,o.b.x-o.a.x)*180/Math.PI;$('#geoWidthLabel').textContent='長さ mm';$('#geoHeightRow').classList.add('hidden');$('#geometryHint').textContent='端点をドラッグするか、長さ・角度を数値で変更できます。'}else{const rb=o.kind==='rect'?{w:o.w,h:o.h}:o.kind==='circle'?{w:o.rx*2,h:o.ry*2}:rawBoundsPoints(o.points);w=(o.kind==='rect'&&o.width_mm>0)?o.width_mm:rb.w/s;h=(o.kind==='rect'&&o.depth_mm>0)?o.depth_mm:rb.h/s;$('#geoWidthLabel').textContent='幅 mm';$('#geoHeightRow').classList.remove('hidden');$('#geometryHint').textContent='図形の全体寸法と回転角を数値で変更できます。'}$('#geoWidth').value=w?Math.round(w):'';$('#geoHeight').value=h?Math.round(h):'';$('#geoAngle').value=(Math.round(ang*10)/10).toString();}
 function updateStatus(extra=''){let m={new:'新築モード',survey:'リフォーム現調',instruction:'指示図'}[mode];let scale=pxPerMm?`縮尺校正済み 1mm=${pxPerMm.toFixed(3)}px`:'縮尺未設定';$('#statusbar').innerHTML=`<span class="badge ok">${m}</span><span class="badge ${pxPerMm?'ok':'warn'}">${scale}</span> ${extra}`;}
+function ipadDrawingUI(){
+  return (typeof matchMedia==='function') &&
+    (matchMedia('(hover: none)').matches || matchMedia('(pointer: coarse)').matches);
+}
+function lengthToolSelected(){
+  return exteriorIsLengthTool(activeExterior) && ['line','polyline'].includes(tool);
+}
 function updatePolylineFinishUI(){
-  const show=(tool==='polyline'&&points.length>=2);
+  const show=tool==='polyline'&&points.length>=2;
   const b=$('#finishPolylineMobile');
   if(b)b.classList.toggle('hidden',!show);
   const t=$('#finishPolylineTablet');
   if(t)t.classList.toggle('hidden',!show);
+  const quickFinish=$('#tabletQuickFinish');
+  quickFinish?.classList.toggle('hidden',!show);
+  const showLength=lengthToolSelected();
+  $('#tabletQuickDimSection')?.classList.toggle('hidden',!showLength);
+  const panel=$('#tabletDrawActions');
+  if(panel)panel.classList.toggle('visible',(show||showLength)&&ipadDrawingUI());
+}
+function syncQuickLength(from){
+  const left=$('#extSegmentLength'),floating=$('#tabletQuickLength');
+  if(!left||!floating)return;
+  if(from===floating)left.value=floating.value;
+  else floating.value=left.value;
+}
+function applyPendingExteriorLength(){
+  if(!lengthToolSelected()){
+    updateStatus('CB・フェンス・門柱を選択してから寸法を指定してください');return;
+  }
+  const mm=exteriorLengthInput();
+  if(!(mm>0)){updateStatus('正の寸法（mm）を入力してください');return;}
+  if(tool==='polyline'&&points.length>=2){
+    const i=points.length-1;
+    const corrected=exteriorConstrainLength(points[i-1],points[i],mm);
+    points[i]=corrected;
+    pathHover={...corrected};
+    lastPolylineTapAt=0;lastPolylineTapPoint=null;
+    renderPolylinePreview();updatePolylineFinishUI();
+    updateStatus(`最後の区間を ${mm}mm に変更しました。「✓ 完了」または次の点を指定してください`);
+  }else if(tool==='line'&&drawing?.a&&drawing?.b&&dist(drawing.a,drawing.b)>0.1){
+    drawing.b=exteriorConstrainLength(drawing.a,drawing.b,mm);
+    renderPreview();
+    updateStatus(`線の長さを ${mm}mm に指定しました。`);
+  }else{
+    const o=objects.find(x=>x.id===lastExteriorDrawId);
+    if(o&&o.kind==='line'&&o.exteriorType===activeExterior&&o.a&&o.b){
+      pushHistory();
+      o.b=exteriorConstrainLength(o.a,o.b,mm);o.value_mm=mm;
+      render();syncInspector();
+      updateStatus(`直線の長さを ${mm}mm に変更しました`);
+    }else{
+      updateStatus('まず始点・終点をタップして線の方向を指定してください');return;
+    }
+  }
+  $('#extSegmentLength').value='';
+  syncQuickLength();
 }
 function finishPolyline(){
   if(tool!=='polyline'||points.length<2){
@@ -1123,10 +1279,17 @@ function resetPointerState(){
   objectDrag=null;
   activePointers.clear();
 }
-function setTool(t,preserveExterior=false,preserveSurvey=false){if(!preserveExterior){activeExterior=null;syncExteriorButtons();$('#extSegmentEntry')?.classList.add('hidden');}if(!preserveSurvey){activeSurvey=null;syncSurveyButtons();}if(t!=='select'&&editUnlocked){editUnlocked=false;updateEditLockUI();}tool=t;if(t==='stairNumber')nextStairNumber=1;lastPolylineTapAt=0;lastPolylineTapPoint=null;exactLineStart=null;exactLineDirection=null;$$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$$('[data-mobile-tool]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTool===t));points=[];polygonHover=null;pathHover=null;resetPointerState();render();updatePolylineFinishUI();updateRangeDirectionUi();syncUnifiedNumericUI();updateStatus(`ツール: ${t==='measure'?'定規（寸法）＝測量補助線':t==='range'?'範囲指示線':t==='polyline'?'折れ線':t==='handwrite'?'手書き注記':t==='text'?'テキスト':t==='stairNumber'?'階段段数：タップするごとに①②③…を配置':t}`)}
+function setTool(t,preserveExterior=false,preserveSurvey=false){if(!preserveExterior){activeExterior=null;syncExteriorButtons();$('#extSegmentEntry')?.classList.add('hidden');}if(!preserveSurvey){activeSurvey=null;syncSurveyButtons();}if(t!=='select'&&editUnlocked){editUnlocked=false;updateEditLockUI();}tool=t;lastExteriorDrawId=null;if(t==='stairNumber')nextStairNumber=1;lastPolylineTapAt=0;lastPolylineTapPoint=null;exactLineStart=null;exactLineDirection=null;$$('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$$('[data-mobile-tool]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTool===t));points=[];polygonHover=null;pathHover=null;resetPointerState();render();updatePolylineFinishUI();updateRangeDirectionUi();refreshGuideDimensionControls();syncUnifiedNumericUI();updateStatus(`ツール: ${t==='measure'?'定規（寸法）＝測量補助線':t==='range'?'範囲指示線':t==='polyline'?'折れ線':t==='handwrite'?'手書き注記':t==='text'?'テキスト':t==='stairNumber'?'階段段数：タップするごとに①②③…を配置':t}`)}
 
 $('#modeGroup').addEventListener('click',e=>{let b=e.target.closest('button[data-mode]');if(!b)return;setModeUi(b.dataset.mode);updateStatus()});
 $('#showExistingDims')?.addEventListener('change',()=>render());
+$$('.defaultGuideDimChoice').forEach(el=>el.addEventListener('change',()=>syncGuideDimensionSetting(el.value)));
+$('#guideDimensionVisibility')?.addEventListener('change',()=>{
+  const o=getSel();if(!isGuideDimensionObject(o))return;
+  pushHistory();o.showGuideDimensions=$('#guideDimensionVisibility').value==='show';
+  render();syncInspector();
+  updateStatus(o.showGuideDimensions?'この図形の寸法を図面に表示しました':'この図形の寸法を図面から非表示にしました');
+});
 $('#rangeDirection')?.addEventListener('change',()=>{
   updateRangeDirectionUi();
   if(tool==='range'&&drawing)renderPreview();
@@ -1147,7 +1310,12 @@ $('#toolGrid').addEventListener('click',e=>{let b=e.target.closest('button[data-
 $('#exteriorToolGrid')?.addEventListener('click',e=>{const b=e.target.closest('button[data-ext]');if(b)setExteriorTool(b.dataset.ext)});
 $('#mobileExteriorToolGrid')?.addEventListener('click',e=>{const b=e.target.closest('button[data-ext]');if(b)setExteriorTool(b.dataset.ext)});
 $('#extAreaShape')?.addEventListener('change',()=>{if(activeExterior&&EXTERIOR_PRESETS[activeExterior]?.base==='area')setExteriorTool(activeExterior)});
-$('#extClearSegmentLength')?.addEventListener('click',()=>{$('#extSegmentLength').value='';updateStatus('幅寸法の指定を解除しました。自由に描画できます。')});
+$('#extSegmentLength')?.addEventListener('input',()=>syncQuickLength());
+$('#tabletQuickLength')?.addEventListener('input',()=>syncQuickLength($('#tabletQuickLength')));
+$('#tabletApplyLength')?.addEventListener('click',e=>{e.stopPropagation();applyPendingExteriorLength();});
+$('#extApplySegmentLength')?.addEventListener('click',e=>{e.stopPropagation();applyPendingExteriorLength();});
+$('#tabletQuickFinish')?.addEventListener('click',e=>{e.stopPropagation();finishPolyline();});
+$('#extClearSegmentLength')?.addEventListener('click',()=>{$('#extSegmentLength').value='';$('#tabletQuickLength').value='';updateStatus('幅寸法の指定を解除しました。自由に描画できます。')});
 $('#extLineShape')?.addEventListener('change',()=>{if(activeExterior&&EXTERIOR_PRESETS[activeExterior]?.base==='line')setExteriorTool(activeExterior)});
 $('#mobileExteriorBtn')?.addEventListener('click',e=>{e.stopPropagation();$('#extMobilePanel')?.classList.toggle('open')});
 $('#closeExtMobile')?.addEventListener('click',()=>$('#extMobilePanel')?.classList.remove('open'));
@@ -1162,9 +1330,22 @@ $('#finishPolylineMobile')?.addEventListener('click',e=>{e.preventDefault();e.st
 $('#finishPolylineTablet')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();finishPolyline();});
 
 
+// iPad の Apple Pencil で操作パネルを押したイベントを、描画領域へ流さない。
+// preventDefault は使わない（ボタンの click、入力欄のフォーカスを維持する）。
+const drawingUiSelector='#tabletPanelDock,#mobileDock,#tabletDrawActions,#extMobilePanel,#surveyMobilePanel,#leftPanel,#rightPanel';
+const isDrawingUiEvent=e=>!!e.target?.closest?.(drawingUiSelector);
+for(const id of ['tabletPanelDock','mobileDock','tabletDrawActions','extMobilePanel','surveyMobilePanel','leftPanel','rightPanel']){
+  const el=$('#'+id);
+  if(!el)continue;
+  for(const type of ['pointerdown','pointermove','pointerup','pointercancel']){
+    el.addEventListener(type,e=>e.stopPropagation(),{passive:true});
+  }
+}
+// タップ開始が作図用UIなら、注記配置や図形選択も実行しない。
 // 引出し注記の配置待ち中は、既存図形の選択/ドラッグより先に処理する。
 // iPadでタイル等の図形上をタップしても確実に注記を置けるよう capture フェーズで受ける。
 workspace.addEventListener('pointerdown',e=>{
+  if(isDrawingUiEvent(e))return;
   if(!placingExteriorAnnotationId)return;
   const o=objects.find(x=>x.id===placingExteriorAnnotationId);
   if(!o){placingExteriorAnnotationId=null;return}
@@ -1185,6 +1366,7 @@ workspace.addEventListener('pointerdown',e=>{
 workspace.addEventListener('pointerdown',chooseSelectionAt,{capture:true});
 
 workspace.addEventListener('pointerdown',e=>{
+ if(isDrawingUiEvent(e))return;
  workspace.setPointerCapture?.(e.pointerId);activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType});
  if(activePointers.size===2){const arr=[...activePointers.values()];pinchStart={d:Math.hypot(arr[1].x-arr[0].x,arr[1].y-arr[0].y),zoom,mid:{x:(arr[0].x+arr[1].x)/2,y:(arr[0].y+arr[1].y)/2},panX,panY};return}
  const p=screenToStage(e.clientX,e.clientY);
@@ -1227,7 +1409,7 @@ workspace.addEventListener('pointerdown',e=>{
  }
  if(tool==='polyline'){
    const now=performance.now();
-   const isSecondTap=lastPolylineTapPoint && (now-lastPolylineTapAt)<=420 && dist(p,lastPolylineTapPoint)<=22/zoom;
+   const isSecondTap=!ipadDrawingUI() && e.pointerType==='mouse' && lastPolylineTapPoint && (now-lastPolylineTapAt)<=420 && dist(p,lastPolylineTapPoint)<=22/zoom;
    if(isSecondTap && points.length>=2){
      // 2回目のタップ/クリックは新しい頂点として追加せず、その場で確定する。
      lastPolylineTapAt=0;lastPolylineTapPoint=null;
@@ -1235,9 +1417,10 @@ workspace.addEventListener('pointerdown',e=>{
      return
    }
    let nextPoint=effectiveFoundationPoint(p);
-   if(points.length>=1&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){
+   if(points.length>=1&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()&&!ipadDrawingUI()){
      nextPoint=exteriorConstrainLength(points[points.length-1],p,exteriorLengthInput());
-     $('#extSegmentLength').value=''; // independently editable next segment
+     $('#extSegmentLength').value='';
+     syncQuickLength();
    }
    if(activeSurvey==='foundation'&&points.length&&dist(nextPoint,points[points.length-1])<1/zoom){
      updateStatus('建物基礎：直前の線に対して90°の方向へ次の点を指定してください');return
@@ -1248,7 +1431,7 @@ workspace.addEventListener('pointerdown',e=>{
    lastPolylineTapPoint={...p};
    renderPolylinePreview();
    updatePolylineFinishUI();
-   updateStatus(points.length===1?'折れ線: 始点を指定しました。次の頂点をタップしてください':'折れ線: 頂点を追加しました。終点をダブルクリック/ダブルタップ、または「✓ 完了」で確定できます');
+   updateStatus(points.length===1?'折れ線: 始点を指定しました。次の頂点をタップしてください':'折れ線: 頂点を追加しました。iPadは「✓ 折れ線を完了」を押してください');
    return
  }
  if(tool==='stairNumber'){const o=objBase('stairNumber');o.x=p.x;o.y=p.y;o.step=nextStairNumber++;o.fontSize=22;o.color='#111827';addObj(o);updateStatus(`階段段数：${stairCircledNumber(o.step)} を配置しました。続けて次の番号を配置できます。`);return}
@@ -1257,6 +1440,7 @@ workspace.addEventListener('pointerdown',e=>{
  if(tool==='mask'){drawing={kind:'mask',x:p.x,y:p.y,w:1,h:1,start:p};return}
 });
 workspace.addEventListener('pointermove',e=>{
+ if(isDrawingUiEvent(e))return;
  if(objectDrag){const o=objects.find(x=>x.id===objectDrag.id);if(o){const p=screenToStage(e.clientX,e.clientY),dx=p.x-objectDrag.sx,dy=p.y-objectDrag.sy,orig=objectDrag.orig;
    if(objectDrag.mode==='move'){translateObject(o,orig,dx,dy)}
    else if(objectDrag.mode==='annotation'){if(orig.annotation)o.annotation={x:orig.annotation.x+dx,y:orig.annotation.y+dy}}
@@ -1294,7 +1478,7 @@ workspace.addEventListener('pointermove',e=>{
  const hoverP=screenToStage(e.clientX,e.clientY);if(tool==='polygon'&&points.length&&!drawing){polygonHover=hoverP;renderPolygonPreview();return}
  if(tool==='polyline'&&points.length&&!drawing){
    pathHover=activeSurvey==='foundation'?effectiveFoundationPoint(hoverP):
-     (exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()
+     (exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()&&!ipadDrawingUI()
       ?exteriorConstrainLength(points[points.length-1],hoverP,exteriorLengthInput()):hoverP);
    renderPolylinePreview();return
  }
@@ -1306,7 +1490,7 @@ function finalizeTwoPointDrawing(){
  if(!drawing||!drawing.a||!drawing.b)return;
  const kind=drawing.kind;
   let o=objBase(kind);o.a={...drawing.a};o.b={...drawing.b};
-  if(kind==='line'&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){o.b=exteriorConstrainLength(o.a,o.b,exteriorLengthInput());o.value_mm=exteriorLengthInput();}
+  if(kind==='line'&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()&&!ipadDrawingUI()){o.b=exteriorConstrainLength(o.a,o.b,exteriorLengthInput());o.value_mm=exteriorLengthInput();}
  if(kind==='leader'){o.width=1;o.text=prompt('引出線の先に記載するテキストを入力してください','フェンス H1800')||''}
  if(kind==='range'){o.width=1;o.rangeDirection=rangeDirectionValue()}
  if(kind==='measure'&&pxPerMm)o.value_mm=dist(o.a,o.b)/pxPerMm;
@@ -1321,21 +1505,25 @@ function renderPreview(){
     fillOpacity:.30,width:['line','freehand','polyline','handwrite'].includes(drawing.kind)?(+$('#strokeWidth').value||3):1};
   if(activeExterior)applyExteriorPreset(o,activeExterior);
   if(o.kind==='range')o.rangeDirection=rangeDirectionValue();
-  if(o.kind==='line'&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()){
+  if(o.kind==='line'&&exteriorIsLengthTool(activeExterior)&&exteriorLengthInput()&&!ipadDrawingUI()){
     o.b=exteriorConstrainLength(o.a,o.b,exteriorLengthInput());
   }
   objects.push(o);render();objects.pop();
+  if(drawingNeedsDimensionGuide() && o.kind==='line' && o.a&&o.b){
+    renderGuideDimensionSegments([o.a,o.b],{preview:true,overrideValue:o.value_mm});
+  }
   // 専用エクステリアのW/D等を描画中にも表示しない。
   if(!activeExterior&&!activeSurvey&&['rect','circle'].includes(o.kind))renderShapeDimensions(o);
 }
 function renderPolygonPreview(){render();if(!points.length)return;const previewPts=polygonHover?[...points,polygonHover]:[...points];const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:activeExterior?EXTERIOR_PRESETS[activeExterior].color:$('#colorPicker').value,'stroke-width':1,'stroke-dasharray':'7 5','stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);if(!activeExterior&&!activeSurvey)renderShapeDimensions({kind:'polygon',points:previewPts,closed:false});const first=points[0];svg.appendChild(mk('circle',{cx:first.x,cy:first.y,r:9/zoom,fill:'rgba(127,86,217,.15)',stroke:'#7f56d9','stroke-width':2/zoom,class:'guide'}));if(points.length>=2){const last=polygonHover||points[points.length-1];const close=mk('line',{x1:last.x,y1:last.y,x2:first.x,y2:first.y,stroke:'#98a2b3','stroke-width':1.5,'stroke-dasharray':'4 4',class:'guide'});svg.appendChild(close);addDimText(first.x,first.y-14/zoom,'始点をタップで確定')}}
-function renderPolylinePreview(){render();if(!points.length)return;const previewPts=pathHover?[...points,pathHover]:[...points];const previewColor=activeExterior?EXTERIOR_PRESETS[activeExterior].color:$('#colorPicker').value;const previewWidth=activeExterior?EXTERIOR_PRESETS[activeExterior].width:(+$('#strokeWidth').value||3);const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:previewColor,'stroke-width':previewWidth,'stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);if(activeExterior==='fence')previewPts.forEach(pt=>svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:4.2,fill:previewColor,class:'guide'})));if(!activeExterior&&!activeSurvey)for(let i=0;i<previewPts.length-1;i++)addEdgeDim(previewPts[i],previewPts[i+1],-12/zoom);previewPts.forEach((pt,i)=>{svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:(i===0?5:4)/zoom,fill:'#fff',stroke:$('#colorPicker').value,'stroke-width':2/zoom,class:'guide'}))});const last=previewPts[previewPts.length-1];addDimText(last.x,last.y-14/zoom,'ダブルクリック/ダブルタップ または ✓ 完了','start')}
+function renderPolylinePreview(){render();if(!points.length)return;const previewPts=pathHover?[...points,pathHover]:[...points];const previewColor=activeExterior?EXTERIOR_PRESETS[activeExterior].color:$('#colorPicker').value;const previewWidth=activeExterior?EXTERIOR_PRESETS[activeExterior].width:(+$('#strokeWidth').value||3);const pl=mk('polyline',{points:previewPts.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:previewColor,'stroke-width':previewWidth,'stroke-linejoin':'round',class:'guide'});svg.appendChild(pl);if(activeExterior==='fence')previewPts.forEach(pt=>svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:4.2,fill:previewColor,class:'guide'})));if(drawingNeedsDimensionGuide())renderGuideDimensionSegments(previewPts,{preview:true});else if(!activeExterior&&!activeSurvey)for(let i=0;i<previewPts.length-1;i++)addEdgeDim(previewPts[i],previewPts[i+1],-12/zoom);previewPts.forEach((pt,i)=>{svg.appendChild(mk('circle',{cx:pt.x,cy:pt.y,r:(i===0?5:4)/zoom,fill:'#fff',stroke:$('#colorPicker').value,'stroke-width':2/zoom,class:'guide'}))});const last=previewPts[previewPts.length-1];addDimText(last.x,last.y-14/zoom,ipadDrawingUI()?'✓ 折れ線を完了 で確定':'ダブルクリック または ✓ 完了','start')}
 workspace.addEventListener('dblclick',e=>{
- if(tool!=='polyline'||points.length<2)return;
+ if(tool!=='polyline'||points.length<2||ipadDrawingUI())return;
  e.preventDefault();e.stopPropagation();
  finishPolyline();
 });
 workspace.addEventListener('pointerup',e=>{
+ if(isDrawingUiEvent(e))return;
  if(objectDrag){objectDrag=null;return}
  activePointers.delete(e.pointerId);if(activePointers.size<2)pinchStart=null;if(panStart){panStart=null;return}
  if(!drawing)return;
@@ -1569,7 +1757,98 @@ function deleteSel(){
 $('#undoBtn')?.addEventListener('click',undo);updateUndoUI();
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();undo();return;}if(e.key==='Delete'||e.key==='Backspace'){if(document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')deleteSel()}if(e.key==='Escape'){drawing=null;points=[];setTool('select')}});
 
-$('#uploadBtn').onclick=()=>$('#fileInput').click();$('#fileInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;backgroundName=f.name;if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf')){try{const pdfjsLib=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.mjs';const buf=await f.arrayBuffer(),pdf=await pdfjsLib.getDocument({data:buf}).promise,page=await pdf.getPage(1),vp=page.getViewport({scale:1.5});const temp=document.createElement('canvas');temp.width=vp.width;temp.height=vp.height;await page.render({canvasContext:temp.getContext('2d'),viewport:vp}).promise;const img=new Image();img.onload=()=>{bgImageData=img;bgKind='pdf';initStage(img.width,img.height);fit()};img.src=temp.toDataURL();}catch(err){alert('PDF読込に失敗しました。ネット接続またはPDF.js読込を確認してください。画像化した図面でも利用できます。')}}else{const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{bgImageData=img;bgKind='image';initStage(img.naturalWidth,img.naturalHeight);fit()};img.src=reader.result};reader.readAsDataURL(f)}};
+// Multiple-page PDF import: choose a page with preview before changing existing drawings.
+let pendingPdf=null,pendingPdfFilename='',pendingPdfPreviewSeq=0,pdfPageBusy=false;
+function closePdfPageDialog(){
+  pendingPdfPreviewSeq++;
+  $('#pdfPageModal').classList.remove('open');
+  $('#pdfPageModal').setAttribute('aria-hidden','true');
+  pendingPdf=null;pendingPdfFilename='';pdfPageBusy=false;
+  $('#pdfPageConfirm').disabled=false;
+}
+async function applyPdfBackground(pdf,pageNumber,filename){
+  const page=await pdf.getPage(pageNumber);
+  const natural=page.getViewport({scale:1});
+  // Full page sharp enough for drawing, but bounded in memory on iPad.
+  const renderScale=Math.min(1.8,Math.sqrt(6000000/(natural.width*natural.height)));
+  const vp=page.getViewport({scale:renderScale});
+  const temp=document.createElement('canvas');
+  temp.width=Math.ceil(vp.width);temp.height=Math.ceil(vp.height);
+  await page.render({canvasContext:temp.getContext('2d'),viewport:vp}).promise;
+  const image=new Image();
+  await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=temp.toDataURL('image/png')});
+  bgImageData=image;bgKind='pdf';backgroundName=filename+'（'+pageNumber+'ページ）';
+  initStage(image.width,image.height);fit();
+  updateStatus(`PDF ${pageNumber}ページを読み込みました。必要に応じて縮尺を校正してください。`);
+}
+async function updatePdfPagePreview(){
+  const pdf=pendingPdf;
+  if(!pdf)return;
+  const seq=++pendingPdfPreviewSeq;
+  const number=Number($('#pdfPageSelect').value);
+  $('#pdfPagePrev').disabled=number<=1;
+  $('#pdfPageNext').disabled=number>=pdf.numPages;
+  $('#pdfPageConfirm').disabled=true;
+  $('#pdfPagePreviewStatus').textContent=`${number} / ${pdf.numPages} ページを読み込み中…`;
+  try{
+    const page=await pdf.getPage(number);
+    const natural=page.getViewport({scale:1});
+    const scale=Math.min(1,Math.sqrt(550000/(natural.width*natural.height)));
+    const vp=page.getViewport({scale});
+    // A separate canvas avoids overlapping render tasks if users switch rapidly.
+    const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);
+    await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+    if(seq!==pendingPdfPreviewSeq||pdf!==pendingPdf)return;
+    const dest=$('#pdfPagePreviewCanvas');dest.width=c.width;dest.height=c.height;
+    dest.getContext('2d').drawImage(c,0,0);
+    $('#pdfPagePreviewStatus').textContent=`${number} / ${pdf.numPages} ページ`;
+    $('#pdfPageConfirm').disabled=false;
+  }catch(err){
+    if(seq!==pendingPdfPreviewSeq)return;
+    $('#pdfPagePreviewStatus').textContent='プレビューに失敗しました。別のページを選んでください。';
+  }
+}
+function openPdfPageDialog(pdf,filename){
+  pendingPdf=pdf;pendingPdfFilename=filename;
+  const select=$('#pdfPageSelect');select.replaceChildren();
+  for(let n=1;n<=pdf.numPages;n++){
+    const opt=document.createElement('option');opt.value=String(n);opt.textContent=`${n} ページ / 全 ${pdf.numPages} ページ`;
+    select.appendChild(opt);
+  }
+  select.value='1';
+  $('#pdfPageFileName').textContent=filename;
+  $('#pdfPageModal').classList.add('open');$('#pdfPageModal').setAttribute('aria-hidden','false');
+  updatePdfPagePreview();
+}
+$('#pdfPageSelect').addEventListener('change',updatePdfPagePreview);
+$('#pdfPagePrev').addEventListener('click',()=>{const el=$('#pdfPageSelect');el.value=String(Math.max(1,Number(el.value)-1));updatePdfPagePreview()});
+$('#pdfPageNext').addEventListener('click',()=>{const el=$('#pdfPageSelect');el.value=String(Math.min(pendingPdf?.numPages||1,Number(el.value)+1));updatePdfPagePreview()});
+$('#pdfPageCancel').addEventListener('click',closePdfPageDialog);
+$('#pdfPageConfirm').addEventListener('click',async()=>{
+  if(!pendingPdf||pdfPageBusy)return;
+  const pdf=pendingPdf,number=Number($('#pdfPageSelect').value),filename=pendingPdfFilename;
+  pdfPageBusy=true;$('#pdfPageConfirm').disabled=true;
+  $('#pdfPagePreviewStatus').textContent='選択したページを図面へ読み込み中…';
+  try{await applyPdfBackground(pdf,number,filename);closePdfPageDialog()}
+  catch(err){pdfPageBusy=false;$('#pdfPageConfirm').disabled=false;alert('選択したPDFページの読込に失敗しました。別のページをお試しください。')}
+});
+$('#uploadBtn').onclick=()=>$('#fileInput').click();
+$('#fileInput').onchange=async e=>{
+  const f=e.target.files?.[0];e.target.value='';if(!f)return;
+  if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf')){
+    try{
+      const pdfjsLib=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.mjs';
+      const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+      if(pdf.numPages>1)openPdfPageDialog(pdf,f.name);
+      else await applyPdfBackground(pdf,1,f.name);
+    }catch(err){alert('PDF読込に失敗しました。ネット接続またはPDF.js読込を確認してください。画像化した図面でも利用できます。')}
+  }else{
+    const reader=new FileReader();reader.onload=()=>{
+      const img=new Image();img.onload=()=>{backgroundName=f.name;bgImageData=img;bgKind='image';initStage(img.naturalWidth,img.naturalHeight);fit()};img.src=reader.result
+    };reader.readAsDataURL(f)
+  }
+};
 
 
 function addReferenceImageFile(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const maxW=Math.min(W*.35,420),scale=Math.min(1,maxW/img.naturalWidth);let o=objBase('image');o.x=Math.max(20,(W-img.naturalWidth*scale)/2);o.y=Math.max(20,(H-img.naturalHeight*scale)/2);o.w=img.naturalWidth*scale;o.h=img.naturalHeight*scale;o.dataUrl=reader.result;o.note='参考イメージ';addObj(o);setTool('select');updateStatus('参考画像を貼り付けました。ドラッグで移動、右下ハンドルで拡大縮小できます。')};img.src=reader.result};reader.readAsDataURL(file)}
