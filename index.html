@@ -1098,7 +1098,7 @@ function render(){svg.innerHTML='';for(const o of objects){let el;
    // 単独のテキストは最前面の注記レイヤーに描くため、ここでは描画しない。
  } else if(o.kind==='image'){const img=mk('image',{x:o.x,y:o.y,width:o.w,height:o.h,href:o.dataUrl,preserveAspectRatio:'xMidYMid meet'});img.dataset.id=o.id;img.style.pointerEvents='all';img.style.cursor=editUnlocked?'move':'pointer';img.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(img);
  } else if(o.kind==='elevation'){const r=o.radius||20;const g=mk('g');const c=mk('circle',{cx:o.x,cy:o.y,r,fill:'none',stroke:o.color,'stroke-width':1});const t=mk('text',{x:o.x,y:o.y+Math.max(4,r*.24),'text-anchor':'middle',fill:o.color,'font-size':Math.max(10,r*.65),'font-weight':'700'});t.textContent=o.text;g.append(c,t);g.dataset.id=o.id;g.style.pointerEvents='all';g.style.cursor=editUnlocked?'move':'pointer';g.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(g)
- } else if(o.kind==='mask'){el=mk('rect',{x:o.x,y:o.y,width:o.w,height:o.h,fill:'#fff',stroke:'#d0d5dd','stroke-dasharray':'4 4'});el.dataset.id=o.id;el.style.pointerEvents='all';el.style.cursor=editUnlocked?'move':'pointer';el.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(el)}
+ } else if(o.kind==='mask'){el=mk('rect',{x:o.x,y:o.y,width:o.w,height:o.h,fill:'#fff',stroke:'none'});el.dataset.id=o.id;el.style.pointerEvents='all';el.style.cursor=editUnlocked?'move':'pointer';el.addEventListener('pointerdown',ev=>startObjectDrag(o,ev));svg.appendChild(el)}
  renderExteriorDecoration(o);
  drawExteriorLengthLabels(o);
  drawSavedGuideDimensions(o);
