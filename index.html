@@ -113,6 +113,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
     <button id="uploadBtn">図面読込</button><input id="fileInput" type="file" accept="image/*,.pdf,application/pdf" />
     <button id="addImageBtn">参考画像貼付</button><input id="imageInput" type="file" accept="image/*" />
     <button id="fitBtn">全体表示</button>
+    <button id="rotateBgBtn" title="読み込んだ図面を時計回りに90度回転">図面90°回転</button>
     <button id="zoomIn">＋</button><button id="zoomOut">－</button>
     <button id="undoBtn" title="1つ前の操作に戻す">↶ 戻る</button>
     <button id="editLockBtn" class="editLocked" title="通常はロック。移動・頂点編集をするときだけ解除します">🔒 編集ロック中</button>
@@ -359,6 +360,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
   <div class="pdfPageCard" role="dialog" aria-modal="true" aria-labelledby="pdfPageTitle">
     <h3 id="pdfPageTitle" style="font-size:17px;margin:0 0 6px">PDFの読み込みページを選択</h3>
     <div class="hint" id="pdfPageFileName" style="overflow-wrap:anywhere"></div>
+    <div class="hint" style="margin-top:5px">複数ページPDFは、読み込みたいページを選択してから「このページを読み込む」を押してください。</div>
     <div class="pdfPageNav">
       <button id="pdfPagePrev" type="button">← 前のページ</button>
       <select id="pdfPageSelect" aria-label="PDFページ"></select>
@@ -1832,6 +1834,47 @@ $('#pdfPageConfirm').addEventListener('click',async()=>{
   try{await applyPdfBackground(pdf,number,filename);closePdfPageDialog()}
   catch(err){pdfPageBusy=false;$('#pdfPageConfirm').disabled=false;alert('選択したPDFページの読込に失敗しました。別のページをお試しください。')}
 });
+
+async function rotateBackground90(){
+  if(!bgImageData){
+    updateStatus('回転する図面が読み込まれていません。');
+    return;
+  }
+  if(objects.length){
+    const ok=confirm('作図済みの記載があります。背景図面だけを回転すると位置がずれます。\n作図前に回転することを推奨します。\n背景図面だけを90°回転しますか？');
+    if(!ok)return;
+  }
+  const srcW=bgImageData.naturalWidth||bgImageData.width||W;
+  const srcH=bgImageData.naturalHeight||bgImageData.height||H;
+  const c=document.createElement('canvas');
+  c.width=srcH;
+  c.height=srcW;
+  const x=c.getContext('2d');
+  x.save();
+  x.translate(c.width,0);
+  x.rotate(Math.PI/2);
+  x.drawImage(bgImageData,0,0,srcW,srcH);
+  x.restore();
+
+  const image=new Image();
+  await new Promise((resolve,reject)=>{
+    image.onload=resolve;
+    image.onerror=reject;
+    image.src=c.toDataURL('image/png');
+  });
+  bgImageData=image;
+  // 回転後はステージ寸法も縦横を入れ替える。
+  initStage(image.width,image.height);
+  // 既存の縮尺校正点は座標系が変わるため安全側でリセット。
+  pxPerMm=null;
+  $('#scaleInfo').value='未設定';
+  fit();
+  updateStatus('図面を時計回りに90°回転しました。必要に応じて縮尺を再校正してください。');
+}
+$('#rotateBgBtn')?.addEventListener('click',()=>rotateBackground90().catch(()=>{
+  alert('図面の回転に失敗しました。図面を読み込み直してお試しください。');
+}));
+
 $('#uploadBtn').onclick=()=>$('#fileInput').click();
 $('#fileInput').onchange=async e=>{
   const f=e.target.files?.[0];e.target.value='';if(!f)return;
@@ -1840,8 +1883,12 @@ $('#fileInput').onchange=async e=>{
       const pdfjsLib=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs');
       pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.mjs';
       const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-      if(pdf.numPages>1)openPdfPageDialog(pdf,f.name);
-      else await applyPdfBackground(pdf,1,f.name);
+      if(pdf.numPages>1){
+        openPdfPageDialog(pdf,f.name);
+        updateStatus(`PDFは全${pdf.numPages}ページです。読み込むページを選択してください。`);
+      }else{
+        await applyPdfBackground(pdf,1,f.name);
+      }
     }catch(err){alert('PDF読込に失敗しました。ネット接続またはPDF.js読込を確認してください。画像化した図面でも利用できます。')}
   }else{
     const reader=new FileReader();reader.onload=()=>{
