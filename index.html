@@ -84,6 +84,11 @@ h3{font-size:14px;margin:10px 0 8px}.section{border-bottom:1px solid #edf0f2;pad
 #tabletQuickLength{width:100%;min-height:44px;padding:7px 10px;font-size:18px;border:1px solid #cbd5e1;border-radius:8px}
 @media (hover:none), (pointer:coarse){#tabletDrawActions.visible{display:flex}}
 #tabletPanelDock,#mobileDock,#tabletDrawActions,#extMobilePanel,#surveyMobilePanel{touch-action:manipulation}
+@media (hover:none), (pointer:coarse){
+  #rangeDirectionRow{display:none!important}
+  #mobileRangeDirection{display:none!important}
+  #rangeDirectionEditRow{display:none!important}
+}
 svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif}
 
 .elevModal{position:fixed;inset:0;background:rgba(17,24,39,.35);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
@@ -200,7 +205,7 @@ svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans"
       <div class="row hidden" id="numericSidesRow"><label>辺数</label><input id="numericSides" type="number" min="3" max="12" step="1" value="4"></div>
       <div class="hint">寸法・角度を入力後、キャンバス上の基準点をクリックすると作成します。</div>
     </div>
-    <div class="hint" style="margin-top:8px">同じ作図ツールを、直接描画でも数値指定でも使えます。iPadのApple Pencilでは直線・定規・範囲指示線・引出線は、ペンを引いて画面から離すと確定します。多角形の直接描画は各頂点をタップし、最後に始点をタップすると確定します。範囲指示線は始点と終点で作成し、上向き・下向きに変更できます。</div>
+    <div class="hint" style="margin-top:8px">同じ作図ツールを、直接描画でも数値指定でも使えます。iPadのApple Pencilでは直線・定規・範囲指示線・引出線は、ペンを引いて画面から離すと確定します。多角形の直接描画は各頂点をタップし、最後に始点をタップすると確定します。範囲指示線は始点と終点で作成します。iPadでは描いた向きをそのまま採用し、PCでは上向き・下向きを選択できます。</div>
   </div>
   <div class="section">
     <h3>新規作図スタイル</h3>
@@ -971,13 +976,23 @@ function foundationConstrainPoint(target,pts){
 function effectiveFoundationPoint(p){
   return activeSurvey==='foundation' ? foundationConstrainPoint(p,points) : p;
 }
-function rangeDirectionValue(){return $('#rangeDirection')?.value==='down'?'down':'up'}
+function rangeDirectionValue(){
+  if(typeof ipadDrawingUI==='function' && ipadDrawingUI())return 'drawn';
+  return $('#rangeDirection')?.value==='down'?'down':'up';
+}
 function updateRangeDirectionUi(){
   const b=$('#mobileRangeDirection');
-  if(b){b.classList.toggle('hidden',tool!=='range');b.textContent=rangeDirectionValue()==='down'?'↓ 下':'↑ 上'}
+  const ipad=(typeof ipadDrawingUI==='function'&&ipadDrawingUI());
+  if(b){
+    b.classList.toggle('hidden',ipad||tool!=='range');
+    if(!ipad)b.textContent=rangeDirectionValue()==='down'?'↓ 下':'↑ 上';
+  }
 }
-function rangeFrame(o){const a=o.a,b=o.b;const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;const ux=dx/L,uy=dy/L;let nx=-uy,ny=ux;if(ny>0){nx=-nx;ny=-ny}if(Math.abs(ny)<0.15&&nx<0){nx=-nx;ny=-ny}
-if((o.rangeDirection||'up')==='down'){nx=-nx;ny=-ny}
+function rangeFrame(o){const a=o.a,b=o.b;const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;const ux=dx/L,uy=dy/L;let nx=-uy,ny=ux;if(ny>0){nx=-nx;ny=-ny}const rangeMode=o.rangeDirection||'up';
+if(rangeMode!=='drawn'){
+  if(Math.abs(ny)<0.15&&nx<0){nx=-nx;ny=-ny}
+  if(rangeMode==='down'){nx=-nx;ny=-ny}
+}
 const defaultOff=Math.max(36,Math.min(70,L*.12));const off=Math.max(12,o.rangeOffset??defaultOff);const shoulder=Math.max(24,Math.min(48,L*.08));return {a,b,L,ux,uy,nx,ny,off,shoulder}}
 function rangePoints(o){const f=rangeFrame(o);return [f.a,{x:f.a.x+f.ux*f.shoulder+f.nx*f.off,y:f.a.y+f.uy*f.shoulder+f.ny*f.off},{x:f.b.x-f.ux*f.shoulder+f.nx*f.off,y:f.b.y-f.uy*f.shoulder+f.ny*f.off},f.b]}
 function objBase(kind){let s=currentStyle();if(!['line','freehand','polyline','handwrite'].includes(kind))s.width=1;return {id:uid(),kind,...s,height_mm:null,product:'',note:'',mode};}
@@ -1190,8 +1205,9 @@ function syncInspector(){
   const guideEditor=$('#guideDimensionEditor');
   guideEditor?.classList.toggle('hidden',!isGuideDimensionObject(o));
   if(isGuideDimensionObject(o))$('#guideDimensionVisibility').value=o.showGuideDimensions?'show':'hide';
-  $('#rangeDirectionEditRow')?.classList.toggle('hidden',o?.kind!=='range');
-  if(o?.kind==='range')$('#rangeDirectionEdit').value=o.rangeDirection||'up';
+  const ipadRange=(typeof ipadDrawingUI==='function'&&ipadDrawingUI());
+  $('#rangeDirectionEditRow')?.classList.toggle('hidden',ipadRange||o?.kind!=='range');
+  if(o?.kind==='range'&&!ipadRange)$('#rangeDirectionEdit').value=o.rangeDirection||'up';
   syncExteriorLengthEditor(o);const box=$('#geometryBox');$('#editExteriorInfo')?.classList.toggle('hidden',!o?.exteriorType);
   const annotationActions=$('#extAnnotationActions');
   annotationActions?.classList.toggle('hidden',!o?.exteriorType);
@@ -1470,7 +1486,11 @@ workspace.addEventListener('pointermove',e=>{
      const f=rangeFrame(orig),mid={x:(orig.a.x+orig.b.x)/2,y:(orig.a.y+orig.b.y)/2};
      const projected=(p.x-mid.x)*f.nx+(p.y-mid.y)*f.ny;
      o.rangeOffset=Math.max(12,Math.abs(projected));
-     o.rangeDirection=projected>=0?(orig.rangeDirection||'up'):((orig.rangeDirection||'up')==='up'?'down':'up');
+     if(typeof ipadDrawingUI==='function'&&ipadDrawingUI()){
+       o.rangeDirection='drawn';
+     }else{
+       o.rangeDirection=projected>=0?(orig.rangeDirection||'up'):((orig.rangeDirection||'up')==='up'?'down':'up');
+     }
    }
    else if(objectDrag.mode.startsWith('polyVertex:')){const i=Number(objectDrag.mode.split(':')[1]);if(Number.isInteger(i)&&o.points?.[i])o.points[i]={x:p.x,y:p.y}}
    render();syncInspector()}return}
@@ -1761,54 +1781,159 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLower
 
 // Multiple-page PDF import: choose a page with preview before changing existing drawings.
 let pendingPdf=null,pendingPdfFilename='',pendingPdfPreviewSeq=0,pdfPageBusy=false;
+let activePdfJsLib=null;
+let pendingPdfBytes=null;
+let muPdfLibPromise=null;
+function loadMuPdfLib(){
+  if(muPdfLibPromise)return muPdfLibPromise;
+  const urls=[
+    'https://cdn.jsdelivr.net/npm/mupdf@1.27.0/dist/mupdf.js',
+    'https://esm.sh/mupdf@1.27.0'
+  ];
+  muPdfLibPromise=(async()=>{
+    let lastErr;
+    for(const url of urls){
+      try{
+        const mod=await import(url);
+        if(mod?.Document?.openDocument)return mod;
+        if(mod?.default?.Document?.openDocument)return mod.default;
+        lastErr=new Error('MuPDF API unavailable');
+      }catch(err){lastErr=err}
+    }
+    throw lastErr||new Error('MuPDFを読み込めませんでした');
+  })();
+  return muPdfLibPromise;
+}
+async function renderPdfPageWithMuPdf(bytes,pageNumber,{preview=false}={}){
+  const mupdf=await loadMuPdfLib();
+  const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  const doc=mupdf.Document.openDocument(data,'application/pdf');
+  let page,pixmap;
+  try{
+    page=doc.loadPage(pageNumber-1);
+    const bounds=page.getBounds?.()||[0,0,1190,841];
+    const pw=Math.max(1,bounds[2]-bounds[0]),ph=Math.max(1,bounds[3]-bounds[1]);
+    const maxPixels=preview?650000:12000000;
+    const targetScale=preview?Math.min(1.15,Math.sqrt(maxPixels/(pw*ph))):Math.min(3.4,Math.sqrt(maxPixels/(pw*ph)));
+    const scale=Math.max(preview?.35:1,targetScale);
+    const matrix=mupdf.Matrix?.scale?mupdf.Matrix.scale(scale,scale):[scale,0,0,scale,0,0];
+    const cs=mupdf.ColorSpace?.DeviceRGB||mupdf.ColorSpace?.RGB;
+    pixmap=page.toPixmap(matrix,cs,false);
+    const png=pixmap.asPNG();
+    const blob=new Blob([png],{type:'image/png'});
+    const url=URL.createObjectURL(blob);
+    const image=new Image();
+    await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url});
+    URL.revokeObjectURL(url);
+    return image;
+  }finally{
+    try{pixmap?.destroy?.()}catch(_){ }
+    try{page?.destroy?.()}catch(_){ }
+    try{doc?.destroy?.()}catch(_){ }
+  }
+}
+
 function closePdfPageDialog(){
   pendingPdfPreviewSeq++;
   $('#pdfPageModal').classList.remove('open');
   $('#pdfPageModal').setAttribute('aria-hidden','true');
-  pendingPdf=null;pendingPdfFilename='';pdfPageBusy=false;
+  pendingPdf=null;pendingPdfFilename='';pendingPdfBytes=null;pdfPageBusy=false;
   $('#pdfPageConfirm').disabled=false;
 }
+
+async function drawPdfTextFallback(page,viewport,ctx){
+  // 非埋め込みCIDフォントの住宅CAD PDF向け。
+  // PDF.js の内部フォント描画に依存せず、TextContent のPDF座標を直接Canvasへ置く。
+  let tc;
+  try{
+    tc=await page.getTextContent({includeMarkedContent:false,disableNormalization:true});
+  }catch(_){return {items:0,drawn:0}}
+  if(!tc?.items?.length)return {items:0,drawn:0};
+  const scale=viewport.scale||1;
+  const pageHeight=(page.view?.[3]-page.view?.[1])||viewport.height/scale;
+  const fallbackFont='"Meiryo","Yu Gothic","YuGothic","MS Gothic","Hiragino Kaku Gothic ProN",sans-serif';
+  let drawn=0;
+  for(const item of tc.items){
+    const raw=item?.str;
+    if(typeof raw!=='string'||!raw.trim())continue;
+    const m=item.transform||[1,0,0,1,0,0];
+    const x=(m[4]-(page.view?.[0]||0))*scale;
+    const y=(pageHeight-(m[5]-(page.view?.[1]||0)))*scale;
+    // 横書きは d、縦書き/回転文字は a,b も考慮して最も妥当な文字高を採る。
+    let fs=Math.abs(m[3])*scale;
+    if(!(fs>1))fs=Math.hypot(m[0],m[1])*scale;
+    if(!(fs>1))fs=Math.max(6,Math.abs(item.height||6)*scale);
+    fs=Math.max(5,Math.min(fs,72*scale));
+    const angle=-Math.atan2(m[1],m[0]);
+    try{
+      ctx.save();
+      ctx.translate(x,y);
+      if(Math.abs(angle)>.001)ctx.rotate(angle);
+      ctx.font=`${fs}px ${fallbackFont}`;
+      ctx.textBaseline='alphabetic';
+      ctx.textAlign='left';
+      ctx.fillStyle='#000';
+      ctx.globalAlpha=1;
+      // 文字幅補正は行わない。まず可読性を優先し、PDF上の文字を確実に表示する。
+      ctx.fillText(raw,0,0);
+      ctx.restore();
+      drawn++;
+    }catch(_){try{ctx.restore()}catch(__){}}
+  }
+  return {items:tc.items.length,drawn};
+}
 async function applyPdfBackground(pdf,pageNumber,filename){
+  // PDF.jsでは非埋め込み日本語CIDフォントが欠落するため、MuPDFを最優先で描画する。
+  if(pendingPdfBytes){
+    try{
+      const image=await renderPdfPageWithMuPdf(pendingPdfBytes,pageNumber,{preview:false});
+      bgImageData=image;bgKind='pdf';backgroundName=filename+'（'+pageNumber+'ページ）';
+      initStage(image.naturalWidth||image.width,image.naturalHeight||image.height);fit();
+      updateStatus(`PDF ${pageNumber}ページをMuPDFで読み込みました。文字・数値を含む図面をそのまま描画しています。必要に応じて縮尺を校正してください。`);
+      return;
+    }catch(err){
+      console.warn('MuPDF render failed; falling back to PDF.js',err);
+    }
+  }
   const page=await pdf.getPage(pageNumber);
   const natural=page.getViewport({scale:1});
-  // Full page sharp enough for drawing, but bounded in memory on iPad.
-  const renderScale=Math.min(1.8,Math.sqrt(6000000/(natural.width*natural.height)));
+  const deviceBoost=Math.min(1.35,Math.max(1,window.devicePixelRatio||1));
+  const targetScale=3.2*deviceBoost,maxPixels=12000000;
+  const renderScale=Math.min(targetScale,Math.sqrt(maxPixels/(natural.width*natural.height)));
   const vp=page.getViewport({scale:renderScale});
-  const temp=document.createElement('canvas');
-  temp.width=Math.ceil(vp.width);temp.height=Math.ceil(vp.height);
-  await page.render({canvasContext:temp.getContext('2d'),viewport:vp}).promise;
+  const temp=document.createElement('canvas');temp.width=Math.ceil(vp.width);temp.height=Math.ceil(vp.height);
+  const tctx=temp.getContext('2d',{alpha:false});tctx.imageSmoothingEnabled=true;tctx.imageSmoothingQuality='high';
+  await page.render({canvasContext:tctx,viewport:vp,background:'white'}).promise;
   const image=new Image();
   await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=temp.toDataURL('image/png')});
   bgImageData=image;bgKind='pdf';backgroundName=filename+'（'+pageNumber+'ページ）';
   initStage(image.width,image.height);fit();
-  updateStatus(`PDF ${pageNumber}ページを読み込みました。必要に応じて縮尺を校正してください。`);
+  updateStatus(`PDF ${pageNumber}ページをPDF.jsで読み込みました。MuPDFが利用できなかったため文字が欠落する場合があります。`);
 }
 async function updatePdfPagePreview(){
-  const pdf=pendingPdf;
-  if(!pdf)return;
-  const seq=++pendingPdfPreviewSeq;
-  const number=Number($('#pdfPageSelect').value);
-  $('#pdfPagePrev').disabled=number<=1;
-  $('#pdfPageNext').disabled=number>=pdf.numPages;
-  $('#pdfPageConfirm').disabled=true;
-  $('#pdfPagePreviewStatus').textContent=`${number} / ${pdf.numPages} ページを読み込み中…`;
+  const pdf=pendingPdf;if(!pdf)return;
+  const seq=++pendingPdfPreviewSeq,number=Number($('#pdfPageSelect').value);
+  $('#pdfPagePrev').disabled=number<=1;$('#pdfPageNext').disabled=number>=pdf.numPages;
+  $('#pdfPageConfirm').disabled=true;$('#pdfPagePreviewStatus').textContent=`${number} / ${pdf.numPages} ページを読み込み中…`;
   try{
-    const page=await pdf.getPage(number);
-    const natural=page.getViewport({scale:1});
-    const scale=Math.min(1,Math.sqrt(550000/(natural.width*natural.height)));
-    const vp=page.getViewport({scale});
-    // A separate canvas avoids overlapping render tasks if users switch rapidly.
+    if(pendingPdfBytes){
+      try{
+        const img=await renderPdfPageWithMuPdf(pendingPdfBytes,number,{preview:true});
+        if(seq!==pendingPdfPreviewSeq||pdf!==pendingPdf)return;
+        const dest=$('#pdfPagePreviewCanvas');dest.width=img.naturalWidth||img.width;dest.height=img.naturalHeight||img.height;
+        dest.getContext('2d').drawImage(img,0,0);
+        $('#pdfPagePreviewStatus').textContent=`${number} / ${pdf.numPages} ページ（MuPDF）`;
+        $('#pdfPageConfirm').disabled=false;return;
+      }catch(err){console.warn('MuPDF preview failed',err)}
+    }
+    const page=await pdf.getPage(number),natural=page.getViewport({scale:1});
+    const scale=Math.min(1,Math.sqrt(550000/(natural.width*natural.height))),vp=page.getViewport({scale});
     const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);
-    await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+    await page.render({canvasContext:c.getContext('2d',{alpha:false}),viewport:vp,background:'white'}).promise;
     if(seq!==pendingPdfPreviewSeq||pdf!==pendingPdf)return;
-    const dest=$('#pdfPagePreviewCanvas');dest.width=c.width;dest.height=c.height;
-    dest.getContext('2d').drawImage(c,0,0);
-    $('#pdfPagePreviewStatus').textContent=`${number} / ${pdf.numPages} ページ`;
-    $('#pdfPageConfirm').disabled=false;
-  }catch(err){
-    if(seq!==pendingPdfPreviewSeq)return;
-    $('#pdfPagePreviewStatus').textContent='プレビューに失敗しました。別のページを選んでください。';
-  }
+    const dest=$('#pdfPagePreviewCanvas');dest.width=c.width;dest.height=c.height;dest.getContext('2d').drawImage(c,0,0);
+    $('#pdfPagePreviewStatus').textContent=`${number} / ${pdf.numPages} ページ（PDF.js）`;$('#pdfPageConfirm').disabled=false;
+  }catch(err){if(seq!==pendingPdfPreviewSeq)return;$('#pdfPagePreviewStatus').textContent='プレビューに失敗しました。別のページを選んでください。'}
 }
 function openPdfPageDialog(pdf,filename){
   pendingPdf=pdf;pendingPdfFilename=filename;
@@ -1880,16 +2005,30 @@ $('#fileInput').onchange=async e=>{
   const f=e.target.files?.[0];e.target.value='';if(!f)return;
   if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf')){
     try{
+      const raw=await f.arrayBuffer();
+      pendingPdfBytes=new Uint8Array(raw.slice(0));
       const pdfjsLib=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs');
+      activePdfJsLib=pdfjsLib;
       pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.mjs';
-      const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+      const pdf=await pdfjsLib.getDocument({
+        data:new Uint8Array(raw),
+        // 日本語CAD/住宅図面で使われるCIDフォント・CMapを明示的に読み込む。
+        cMapUrl:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/cmaps/',
+        cMapPacked:true,
+        standardFontDataUrl:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/standard_fonts/',
+        useSystemFonts:true,
+        disableFontFace:false,
+        fontExtraProperties:true
+      }).promise;
       if(pdf.numPages>1){
         openPdfPageDialog(pdf,f.name);
         updateStatus(`PDFは全${pdf.numPages}ページです。読み込むページを選択してください。`);
       }else{
+        pendingPdf=pdf;pendingPdfFilename=f.name;
         await applyPdfBackground(pdf,1,f.name);
+        pendingPdf=null;pendingPdfFilename='';pendingPdfBytes=null;
       }
-    }catch(err){alert('PDF読込に失敗しました。ネット接続またはPDF.js読込を確認してください。画像化した図面でも利用できます。')}
+    }catch(err){console.error(err);alert('PDF読込に失敗しました。MuPDF／PDF.jsの読み込みに必要なネット接続を確認してください。')}
   }else{
     const reader=new FileReader();reader.onload=()=>{
       const img=new Image();img.onload=()=>{backgroundName=f.name;bgImageData=img;bgKind='image';initStage(img.naturalWidth,img.naturalHeight);fit()};img.src=reader.result
